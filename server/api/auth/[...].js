@@ -1,7 +1,6 @@
 import { NuxtAuthHandler } from "#auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import models from "~/server/models";
-import bcrypt from "bcrypt";
 
 const { User } = models
 
