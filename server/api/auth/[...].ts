@@ -4,7 +4,7 @@ import models from "~/server/models";
 import { User } from "~/server/models/User";
 
 export default NuxtAuthHandler({
-  secret: useRuntimeConfig().authSecret,
+  secret: process.env.AUTH_SECRET,
 
   pages: {
     signIn: "/",

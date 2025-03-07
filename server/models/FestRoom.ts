@@ -1,5 +1,5 @@
-import { Model, DataTypes, Optional, Sequelize } from 'sequelize';
-import sequelize from '~/config/database';
+import { Model, DataTypes, Optional } from 'sequelize';
+import sequelize from '~/server/database';
 
 // Атрибуты модели FestRoom
 export interface FestRoomAttributes {
