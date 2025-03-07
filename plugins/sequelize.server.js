@@ -1,0 +1,23 @@
+// plugins/sequelize.js
+import { defineNuxtPlugin } from '#app'
+import sequelize from '~/config/database'
+import models from '~/server/models'
+
+export default defineNuxtPlugin(async (nuxtApp) => {
+  try {
+    await sequelize.authenticate();
+    console.log('Connection to the database has been established successfully.');
+
+    // Синхронизация моделей с базой данных
+    await sequelize.sync();
+
+    return {
+      provide: {
+        sequelize,
+        models
+      }
+    }
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
+})
