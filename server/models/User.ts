@@ -1,6 +1,6 @@
 import { Model, DataTypes, Optional, Sequelize } from 'sequelize';
 import bcrypt from 'bcrypt';
-import sequelize from '~/config/database';
+import sequelize from '~/server/database';
 
 // Атрибуты модели User
 export interface UserAttributes {

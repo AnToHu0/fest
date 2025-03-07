@@ -1,6 +1,6 @@
 // plugins/sequelize.js
 import { defineNuxtPlugin } from '#app'
-import sequelize from '~/config/database'
+import sequelize from '~/server/database'
 import models from '~/server/models'
 
 export default defineNuxtPlugin(async (nuxtApp) => {
