@@ -7,6 +7,7 @@ const form = ref({
 const regError = ref('')
 
 const isLoading = ref(false);
+const emit = defineEmits(['register-success']);
 
 async function handleFormSubmit() {
   try {
@@ -19,11 +20,9 @@ async function handleFormSubmit() {
       console.log(error.value.data.message)
       regError.value = error.value.data.message
     } else {
-      useRouter().push({
-        name: "login",
-      });
+      emit('register-success');
     }
-  } catch (e: any) {
+  } catch (e) {
     console.error(e);
   } finally {
     isLoading.value = false;
@@ -58,13 +57,11 @@ async function handleFormSubmit() {
         type="submit"
         class="bg-blue-500 hover:bg-blue-600 transition-all duration-200 w-full text-blue-50 rounded-lg p-2"
         :class="{
-          'opcatiy-20 cursor-not-allowed': isLoading,
+          'opacity-50 cursor-not-allowed': isLoading,
         }"
       >
         Зарегистрироваться
       </button>
     </form>
   </div>
-</template>
-
-<style></style>
+</template> 
