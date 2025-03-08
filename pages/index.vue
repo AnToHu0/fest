@@ -6,6 +6,8 @@ const activeTab = ref('login');
 const authMessage = ref('');
 const verificationStatus = ref<{ loading: boolean, success?: boolean, message?: string, email?: string, autoLoginCountdown?: number }>({ loading: false });
 const autoLoginTimer = ref(null);
+const showForgotPassword = ref(false);
+const resetToken = ref('');
 
 onMounted(async () => {
   if (route.query.requireAuth === 'true') {
@@ -69,6 +71,13 @@ onMounted(async () => {
       verificationStatus.value.loading = false;
     }
   }
+
+  const resetPasswordToken = route.query.reset as string;
+  if (resetPasswordToken) {
+    resetToken.value = resetPasswordToken;
+    activeTab.value = 'reset-password';
+    navigateTo({ path: route.path, query: {} }, { replace: true });
+  }
 });
 
 onBeforeUnmount(() => {
@@ -80,6 +89,7 @@ onBeforeUnmount(() => {
 function setActiveTab(tab) {
   activeTab.value = tab;
   authMessage.value = '';
+  showForgotPassword.value = false;
 }
 
 function handleLoginSuccess() {
@@ -87,6 +97,21 @@ function handleLoginSuccess() {
 }
 
 function handleRegisterSuccess() {
+}
+
+function handleForgotPassword(email) {
+  showForgotPassword.value = true;
+}
+
+function handleBackToLogin() {
+  showForgotPassword.value = false;
+}
+
+function handleResetSuccess() {
+  setTimeout(() => {
+    activeTab.value = 'login';
+    resetToken.value = '';
+  }, 3000);
 }
 
 async function handleLogout() {
@@ -121,7 +146,7 @@ async function handleLogout() {
     </div>
 
     <div v-else>
-      <div class="text-center mb-6">
+      <div v-if="!showForgotPassword && activeTab !== 'reset-password'" class="text-center mb-6">
         <h1 class="text-2xl font-bold mb-2">Фестиваль</h1>
         <p class="text-gray-600">Войдите или зарегистрируйтесь для доступа к системе</p>
         <p v-if="authMessage" class="text-red-500 mt-2 font-medium">{{ authMessage }}</p>
@@ -138,28 +163,52 @@ async function handleLogout() {
         </div>
       </div>
 
-      <div class="flex border-b mb-4">
-        <button 
-          @click="setActiveTab('login')" 
-          class="py-2 px-4 font-medium"
-          :class="activeTab === 'login' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'"
-        >
-          Вход
-        </button>
-        <button 
-          @click="setActiveTab('register')" 
-          class="py-2 px-4 font-medium"
-          :class="activeTab === 'register' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'"
-        >
-          Регистрация
-        </button>
+      <div v-if="(showForgotPassword || activeTab === 'reset-password') && verificationStatus.message" class="mt-4 mb-6 p-4 rounded" 
+        :class="verificationStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+        <p>{{ verificationStatus.message }}</p>
+        <p v-if="verificationStatus.autoLoginCountdown > 0" class="mt-2 font-medium">
+          Автоматический вход через {{ verificationStatus.autoLoginCountdown }} сек...
+        </p>
       </div>
 
-      <div v-if="activeTab === 'login'">
-        <LoginForm @login-success="handleLoginSuccess" />
+      <div v-if="activeTab === 'reset-password'">
+        <ResetPasswordForm 
+          :token="resetToken" 
+          @reset-success="handleResetSuccess" 
+        />
       </div>
       <div v-else>
-        <RegisterForm @register-success="handleRegisterSuccess" />
+        <div v-if="!showForgotPassword" class="flex border-b mb-4">
+          <button 
+            @click="setActiveTab('login')" 
+            class="py-2 px-4 font-medium"
+            :class="activeTab === 'login' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'"
+          >
+            Вход
+          </button>
+          <button 
+            @click="setActiveTab('register')" 
+            class="py-2 px-4 font-medium"
+            :class="activeTab === 'register' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'"
+          >
+            Регистрация
+          </button>
+        </div>
+
+        <div v-if="activeTab === 'login'">
+          <div v-if="showForgotPassword">
+            <ForgotPasswordForm @back-to-login="handleBackToLogin" />
+          </div>
+          <div v-else>
+            <LoginForm 
+              @login-success="handleLoginSuccess" 
+              @forgot-password="handleForgotPassword" 
+            />
+          </div>
+        </div>
+        <div v-else>
+          <RegisterForm @register-success="handleRegisterSuccess" />
+        </div>
       </div>
     </div>
   </div>
