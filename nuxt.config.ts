@@ -1,7 +1,9 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  plugins: ['~/plugins/sequelize.server.js'],
-
+  plugins: [
+    '~/plugins/sequelize.server.js', 
+    '~/plugins/components.ts'
+  ],
 
   app: {
     head: {
@@ -28,7 +30,13 @@ export default defineNuxtConfig({
     emailFromAddress: process.env.EMAIL_FROM_ADDRESS,
   },
 
-  modules: ["@nuxtjs/tailwindcss", "nuxt-server-utils", "@sidebase/nuxt-auth", '@nuxt/devtools'],
+  modules: [
+    "@nuxtjs/tailwindcss", 
+    "nuxt-server-utils", 
+    "@sidebase/nuxt-auth", 
+    '@nuxt/devtools',
+    'nuxt-icon'
+  ],
 
   auth: {
     baseURL: process.env.AUTH_ORIGIN || `http://localhost:${process.env.PORT || '3000'}`,
