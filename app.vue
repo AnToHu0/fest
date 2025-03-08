@@ -15,9 +15,11 @@ onMounted(() => {
 
 <template>
   <div>
-    <GlobalLoader />
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <Teleport to="body">
+      <GlobalLoader />
+    </Teleport>
   </div>
 </template>

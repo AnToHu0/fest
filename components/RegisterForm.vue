@@ -345,7 +345,7 @@ async function handleFormSubmit() {
     </form>
     
     <PrivacyPolicyModal 
-      :is-open="showPrivacyPolicy" 
+      v-if="showPrivacyPolicy" 
       @close="closePrivacyPolicy" 
     />
   </div>

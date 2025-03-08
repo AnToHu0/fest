@@ -1,96 +1,102 @@
 <script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+
 const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    required: true
-  },
   title: {
     type: String,
     default: ''
   },
   maxWidth: {
     type: String,
-    default: 'md'
+    default: '600px'
   }
 });
 
 const emit = defineEmits(['close']);
 
-// Закрытие модального окна
-const closeModal = () => {
-  emit('close');
-};
+const modalRef = ref<HTMLElement | null>(null);
 
-// Предотвращение закрытия при клике на содержимое модального окна
-const preventClose = (e: Event) => {
-  e.stopPropagation();
-};
-
-// Размеры модального окна
-const maxWidthClass = computed(() => {
-  switch (props.maxWidth) {
-    case 'sm': return 'max-w-sm';
-    case 'md': return 'max-w-md';
-    case 'lg': return 'max-w-lg';
-    case 'xl': return 'max-w-xl';
-    case '2xl': return 'max-w-2xl';
-    default: return 'max-w-md';
+// Закрытие модального окна при клике вне его содержимого
+const handleClickOutside = (event: MouseEvent) => {
+  if (modalRef.value && !modalRef.value.contains(event.target as Node)) {
+    emit('close');
   }
+};
+
+// Закрытие модального окна при нажатии Escape
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    emit('close');
+  }
+};
+
+// Блокировка прокрутки страницы при открытом модальном окне
+const disableBodyScroll = () => {
+  document.body.style.overflow = 'hidden';
+};
+
+// Восстановление прокрутки страницы при закрытии модального окна
+const enableBodyScroll = () => {
+  document.body.style.overflow = '';
+};
+
+// Добавление обработчиков событий при монтировании компонента
+onMounted(() => {
+  document.addEventListener('mousedown', handleClickOutside);
+  document.addEventListener('keydown', handleKeyDown);
+  disableBodyScroll();
+});
+
+// Удаление обработчиков событий перед размонтированием компонента
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleClickOutside);
+  document.removeEventListener('keydown', handleKeyDown);
+  enableBodyScroll();
 });
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition ease-out duration-200"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition ease-in duration-150"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div 
-        v-if="isOpen" 
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
-        @click="closeModal"
-      >
-        <Transition
-          enter-active-class="transition ease-out duration-300"
-          enter-from-class="transform opacity-0 scale-95"
-          enter-to-class="transform opacity-100 scale-100"
-          leave-active-class="transition ease-in duration-200"
-          leave-from-class="transform opacity-100 scale-100"
-          leave-to-class="transform opacity-0 scale-95"
-        >
-          <div 
-            v-if="isOpen" 
-            :class="['bg-white rounded-lg shadow-xl overflow-hidden w-full', maxWidthClass]"
-            @click="preventClose"
-          >
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 class="text-lg font-medium text-gray-900">{{ title }}</h3>
-              <button 
-                type="button" 
-                class="text-gray-400 hover:text-gray-500 focus:outline-none"
-                @click="closeModal"
-              >
-                <span class="sr-only">Закрыть</span>
-                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div class="px-6 py-4">
-              <slot></slot>
-            </div>
-            
-            <div v-if="$slots.footer" class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <slot name="footer"></slot>
-            </div>
-          </div>
-        </Transition>
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <!-- Затемнение фона -->
+      <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <!-- Центрирование модального окна -->
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+      <!-- Модальное окно -->
+      <div 
+        ref="modalRef"
+        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full"
+        :style="{ maxWidth: maxWidth }"
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="modal-headline"
+      >
+        <!-- Заголовок -->
+        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+          <h3 id="modal-headline" class="text-lg font-medium text-gray-900">
+            {{ title }}
+          </h3>
+          <button 
+            type="button" 
+            class="text-gray-400 hover:text-gray-500 focus:outline-none"
+            @click="emit('close')"
+          >
+            <span class="sr-only">Закрыть</span>
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Содержимое -->
+        <div class="bg-white p-6">
+          <slot></slot>
+        </div>
+      </div>
+    </div>
+  </div>
 </template> 

@@ -31,6 +31,8 @@ onMounted(() => {
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <Loader v-if="isLoading" fullPage color="blue" size="lg" />
+    <div v-if="isLoading" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white bg-opacity-80 pointer-events-none">
+      <Loader color="blue" size="lg" />
+    </div>
   </Transition>
 </template> 
