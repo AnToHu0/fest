@@ -7,7 +7,7 @@ const form = ref({
 const error = ref('')
 
 const { signIn } = useAuth();
-const emit = defineEmits(['login-success']);
+const emit = defineEmits(['login-success', 'forgot-password']);
 
 async function handleLogin() {
   try {
@@ -21,6 +21,10 @@ async function handleLogin() {
   } catch (e) {
     console.error(e)
   }
+}
+
+function handleForgotPassword() {
+  emit('forgot-password', form.email);
 }
 </script>
 <template>
@@ -39,7 +43,16 @@ async function handleLogin() {
         type="password"
         placeholder="Пароль"
       />
-      <div v-show='error' class="text-sm text-left text-red-500 mb-3">{{ error }}</div>
+      <div class="flex justify-between items-center mb-4">
+        <div v-show='error' class="text-sm text-left text-red-500">{{ error }}</div>
+        <button 
+          type="button" 
+          class="text-sm text-blue-500 hover:text-blue-700"
+          @click="handleForgotPassword"
+        >
+          Забыли пароль?
+        </button>
+      </div>
       <button
         type="submit"
         class="bg-blue-500 hover:bg-blue-600 transition-all duration-200 w-full text-blue-50 rounded-lg p-2"
