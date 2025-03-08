@@ -2,10 +2,9 @@
 const { status, data, signOut } = useAuth();
 const route = useRoute();
 
-const activeTab = ref('login'); // 'login' или 'register'
+const activeTab = ref('login');
 const authMessage = ref('');
 
-// Проверяем, был ли пользователь перенаправлен с защищенной страницы
 onMounted(() => {
   if (route.query.requireAuth === 'true') {
     activeTab.value = 'login';
@@ -15,16 +14,14 @@ onMounted(() => {
 
 function setActiveTab(tab) {
   activeTab.value = tab;
-  authMessage.value = ''; // Сбрасываем сообщение при переключении вкладок
+  authMessage.value = '';
 }
 
 function handleLoginSuccess() {
-  // Обновление статуса после успешного входа
   refreshNuxtData();
 }
 
 function handleRegisterSuccess() {
-  // Переключение на вкладку входа после успешной регистрации
   activeTab.value = 'login';
 }
 
@@ -35,7 +32,6 @@ async function handleLogout() {
 
 <template>
   <div>
-    <!-- Для авторизованных пользователей -->
     <div v-if="status === 'authenticated'">
       <h1 class="mb-4 text-xl font-bold">
         Добро пожаловать, {{ (data?.user as any)?.fullName || 'Пользователь' }}
@@ -60,7 +56,6 @@ async function handleLogout() {
       </div>
     </div>
 
-    <!-- Для неавторизованных пользователей -->
     <div v-else>
       <div class="text-center mb-6">
         <h1 class="text-2xl font-bold mb-2">Фестиваль</h1>
@@ -68,7 +63,6 @@ async function handleLogout() {
         <p v-if="authMessage" class="text-red-500 mt-2">{{ authMessage }}</p>
       </div>
 
-      <!-- Вкладки для переключения между формами -->
       <div class="flex border-b mb-4">
         <button 
           @click="setActiveTab('login')" 
@@ -86,7 +80,6 @@ async function handleLogout() {
         </button>
       </div>
 
-      <!-- Формы входа и регистрации -->
       <div v-if="activeTab === 'login'">
         <LoginForm @login-success="handleLoginSuccess" />
       </div>

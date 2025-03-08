@@ -4,7 +4,7 @@ import { PaymentTransaction } from './PaymentTransaction';
 import { FestPlacement } from './FestPlacement';
 import { FestRoom } from './FestRoom';
 
-// Интерфейс для типизации моделей
+
 export interface Models {
   User: typeof User;
   FestDepartment: typeof FestDepartment;
@@ -14,7 +14,7 @@ export interface Models {
   [key: string]: any;
 }
 
-// Объект с моделями
+
 const models: Models = {
   User,
   FestDepartment,
@@ -23,7 +23,7 @@ const models: Models = {
   FestRoom
 };
 
-// Установка ассоциаций между моделями
+
 Object.values(models).forEach(model => {
   if (typeof model.associate === 'function') {
     model.associate(models);

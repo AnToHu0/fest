@@ -1,7 +1,7 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
 
-// Атрибуты модели FestPlacement
+
 export interface FestPlacementAttributes {
   id: number;
   room_id: number;
@@ -14,10 +14,10 @@ export interface FestPlacementAttributes {
   comment: string;
 }
 
-// Атрибуты для создания нового размещения
+
 export interface FestPlacementCreationAttributes extends Optional<FestPlacementAttributes, 'id' | 'type' | 'datefrom' | 'dateto' | 'comment'> { }
 
-// Класс модели FestPlacement
+
 export class FestPlacement extends Model<FestPlacementAttributes, FestPlacementCreationAttributes> implements FestPlacementAttributes {
   declare id: number;
   declare room_id: number;
@@ -29,7 +29,7 @@ export class FestPlacement extends Model<FestPlacementAttributes, FestPlacementC
   declare dateto: Date | null;
   declare comment: string;
 
-  // Ассоциации
+  
   static associate(models: any) {
     this.belongsTo(models.FestRoom, { foreignKey: 'room_id' });
     this.belongsTo(models.User, { foreignKey: 'manager_id', as: 'Manager' });
@@ -37,7 +37,7 @@ export class FestPlacement extends Model<FestPlacementAttributes, FestPlacementC
   }
 }
 
-// Инициализация модели
+
 FestPlacement.init(
   {
     id: {

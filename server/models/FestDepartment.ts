@@ -2,7 +2,7 @@ import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
 import { User } from './User';
 
-// Атрибуты модели FestDepartment
+
 export interface FestDepartmentAttributes {
   id: number;
   title: string;
@@ -11,10 +11,10 @@ export interface FestDepartmentAttributes {
   additional_emails: string;
 }
 
-// Атрибуты для создания нового отдела
+
 export interface FestDepartmentCreationAttributes extends Optional<FestDepartmentAttributes, 'id'> { }
 
-// Класс модели FestDepartment
+
 export class FestDepartment extends Model<FestDepartmentAttributes, FestDepartmentCreationAttributes> implements FestDepartmentAttributes {
   declare id: number;
   declare title: string;
@@ -22,13 +22,13 @@ export class FestDepartment extends Model<FestDepartmentAttributes, FestDepartme
   declare public: boolean;
   declare additional_emails: string;
 
-  // Ассоциации
+  
   static associate(models: any) {
     this.belongsTo(models.User, { foreignKey: 'admin_id', as: 'User' });
   }
 }
 
-// Инициализация модели
+
 FestDepartment.init(
   {
     id: {
