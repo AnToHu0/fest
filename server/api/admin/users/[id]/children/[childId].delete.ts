@@ -12,20 +12,35 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Получение ID ребенка из параметров запроса
-    const childId = getRouterParam(event, 'id');
-    if (!childId) {
+    // Проверка роли администратора
+    if (!session.user.roles?.includes('admin')) {
       throw createError({
-        statusCode: 400,
-        message: 'ID ребенка не указан'
+        statusCode: 403,
+        message: 'Недостаточно прав'
       });
     }
 
-    // @ts-ignore - Игнорируем ошибку типизации, так как мы знаем, что id существует
-    const userId = session.user.id;
-    const isAdmin = session.user.roles?.includes('admin');
+    // Получение ID пользователя и ребенка из параметров запроса
+    const userId = getRouterParam(event, 'id');
+    const childId = getRouterParam(event, 'childId');
+    
+    if (!userId || !childId) {
+      throw createError({
+        statusCode: 400,
+        message: 'ID пользователя или ребенка не указан'
+      });
+    }
 
-    // Проверка, что ребенок принадлежит текущему пользователю
+    // Проверка существования пользователя
+    const user = await models.User.findByPk(parseInt(userId));
+    if (!user) {
+      throw createError({
+        statusCode: 404,
+        message: 'Пользователь не найден'
+      });
+    }
+
+    // Проверка, что ребенок принадлежит указанному пользователю
     const child = await models.User.findByPk(parseInt(childId));
 
     if (!child) {
@@ -35,10 +50,10 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    if (child.parentId !== userId && !isAdmin) {
+    if (child.parentId !== parseInt(userId)) {
       throw createError({
-        statusCode: 403,
-        message: 'Вы можете удалять только своих детей'
+        statusCode: 400,
+        message: 'Ребенок не принадлежит указанному пользователю'
       });
     }
 

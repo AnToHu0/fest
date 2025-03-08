@@ -9,6 +9,8 @@ export interface User {
   roles?: string[];
   parentId?: number | null;
   isActive?: boolean;
+  childrenCount?: number;
+  adminNotes?: string | null;
 }
 
 export interface Child extends User {

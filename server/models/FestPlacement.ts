@@ -1,5 +1,6 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
+import type { Models } from './index';
 
 
 export interface FestPlacementAttributes {
@@ -30,7 +31,7 @@ export class FestPlacement extends Model<FestPlacementAttributes, FestPlacementC
   declare comment: string;
 
   
-  static associate(models: any) {
+  static associate(models: Models) {
     this.belongsTo(models.FestRoom, { foreignKey: 'room_id' });
     this.belongsTo(models.User, { foreignKey: 'manager_id', as: 'Manager' });
     this.belongsTo(models.User, { foreignKey: 'user_id', as: 'User' });

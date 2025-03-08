@@ -1,8 +1,6 @@
-import { Model, DataTypes, Optional, Sequelize } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
+import sequelize from './database';
 import bcrypt from 'bcrypt';
-import sequelize from '~/server/database';
-import { Role } from './Role';
-
 
 export interface UserAttributes {
   id: number;
@@ -20,17 +18,10 @@ export interface UserAttributes {
   createdAt?: Date;
   updatedAt?: Date;
   parentId: number | null;
-  Roles?: Role[];
   children?: UserAttributes[];
 }
 
-
-export interface UserCreationAttributes extends Optional<UserAttributes,
-  'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt' |
-  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles' | 'children' | 'searchField' | 'adminNotes'> { }
-
-
-export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
+export class User extends Model {
   declare id: number;
   declare fullName: string;
   declare spiritualName: string | null;
@@ -43,24 +34,20 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare emailVerificationToken: string | null;
   declare searchField: string;
   declare adminNotes: string | null;
-  declare createdAt?: Date;
-  declare updatedAt?: Date;
+  declare createdAt: Date;
+  declare updatedAt: Date;
   declare parentId: number | null;
-  declare Roles?: Role[];
-  declare children?: UserAttributes[];
-
+  declare children?: User[];
 
   async verifyPassword(password: string): Promise<boolean> {
     return await bcrypt.compare(password, this.password);
   }
-
 
   static async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
     return await bcrypt.hash(password, saltRounds);
   }
 }
-
 
 User.init(
   {
@@ -71,15 +58,15 @@ User.init(
     },
     fullName: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     spiritualName: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     birthDate: {
       type: DataTypes.DATE,
-      allowNull: true,
+      allowNull: true
     },
     email: {
       type: DataTypes.STRING,
@@ -91,11 +78,11 @@ User.init(
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     city: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     password: {
       type: DataTypes.STRING,
@@ -110,14 +97,6 @@ User.init(
       allowNull: true,
       defaultValue: null
     },
-    parentId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'fest_users',
-        key: 'id'
-      }
-    },
     searchField: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -127,6 +106,14 @@ User.init(
       type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: null
+    },
+    parentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'fest_users',
+        key: 'id'
+      }
     },
     createdAt: {
       type: DataTypes.DATE
@@ -161,16 +148,19 @@ User.init(
             user.city
           ].filter(value => value != null && value !== '').join(' ').toLowerCase();
         }
-      },
-    },
+      }
+    }
   }
 );
 
-// Определяем связь родитель-ребенок
 User.hasMany(User, {
   as: 'children',
   foreignKey: 'parentId'
 });
-User.belongsTo(User, { as: 'parent', foreignKey: 'parentId' });
+
+User.belongsTo(User, {
+  as: 'parent',
+  foreignKey: 'parentId'
+});
 
 export default User; 

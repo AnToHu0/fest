@@ -30,8 +30,8 @@ const models: Models = {
 };
 
 
-Object.values(models).forEach(model => {
-  if (typeof model.associate === 'function') {
+Object.values(models).forEach((model: any) => {
+  if (model.associate) {
     model.associate(models);
   }
 });

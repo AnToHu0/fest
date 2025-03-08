@@ -4,6 +4,8 @@ import { UserRole } from "~/server/models/UserRole";
 import { sendEmail } from "~/server/utils/mailer";
 import { generateVerificationToken } from "~/server/utils/mailer";
 import { generateVerificationEmail } from "~/server/email/verification";
+import sequelize from "~/server/database";
+import type { Transaction } from "sequelize";
 
 interface RegistrationBody {
   firstName: string;
@@ -86,6 +88,14 @@ export default defineEventHandler(async (event) => {
         }
       }
 
+      // Ищем роль user до создания пользователя
+      console.log('Поиск роли "user"');
+      const userRole = await Role.findOne({ where: { name: 'user' } });
+      if (!userRole) {
+        console.error('Роль "user" не найдена в базе данных');
+        throw new Error('Роль "user" не найдена в базе данных');
+      }
+
       console.log('Создание пользователя с данными:');
       console.log({
         fullName,
@@ -99,17 +109,30 @@ export default defineEventHandler(async (event) => {
       });
 
       try {
-        user = await User.create({
-          fullName,
-          spiritualName: spiritualName || null,
-          birthDate: birthDate ? new Date(birthDate) : null,
-          email,
-          phone: cleanPhone,
-          city: city || null,
-          password,
-          isActive: false,
-          emailVerificationToken
+        // Создаем пользователя в транзакции
+        const result = await sequelize.transaction(async (t: Transaction) => {
+          const newUser = await User.create({
+            fullName,
+            spiritualName: spiritualName || null,
+            birthDate: birthDate ? new Date(birthDate) : null,
+            email,
+            phone: cleanPhone,
+            city: city || null,
+            password,
+            isActive: false,
+            emailVerificationToken
+          }, { transaction: t });
+
+          // Назначаем роль user в той же транзакции
+          await UserRole.create({
+            userId: newUser.id,
+            roleId: userRole.id
+          }, { transaction: t });
+
+          return newUser;
         });
+
+        user = result;
         console.log('Пользователь успешно создан с ID:', user.id);
       } catch (createError: any) {
         console.error('Ошибка при создании пользователя:');
@@ -129,24 +152,6 @@ export default defineEventHandler(async (event) => {
           console.error('Другая ошибка Sequelize:', createError);
           throw createError;
         }
-      }
-
-      console.log('Поиск роли "user"');
-      const userRole = await Role.findOne({ where: { name: 'user' } });
-      if (userRole) {
-        console.log('Роль "user" найдена, ID:', userRole.id);
-        try {
-          await UserRole.create({
-            userId: user.id,
-            roleId: userRole.id
-          });
-          console.log('Роль успешно назначена пользователю');
-        } catch (roleError) {
-          console.error('Ошибка при назначении роли:', roleError);
-          // Продолжаем выполнение, так как это не критическая ошибка
-        }
-      } else {
-        console.log('Роль "user" не найдена');
       }
 
       console.log('Подготовка к отправке email');

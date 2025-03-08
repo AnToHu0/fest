@@ -1,5 +1,6 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
+import type { Models } from './index';
 
 
 export interface FestRoomAttributes {
@@ -24,7 +25,7 @@ export class FestRoom extends Model<FestRoomAttributes, FestRoomCreationAttribut
   declare desc: string;
 
   
-  static associate(models: any) {
+  static associate(models: Models) {
     this.hasMany(models.FestPlacement, { foreignKey: 'room_id', as: 'Placements' });
   }
 }
