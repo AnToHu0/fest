@@ -8,6 +8,7 @@ const verificationStatus = ref<{ loading: boolean, success?: boolean, message?: 
 const autoLoginTimer = ref(null);
 const showForgotPassword = ref(false);
 const resetToken = ref('');
+const formWrapperRef = ref(null);
 
 onMounted(async () => {
   if (route.query.requireAuth === 'true') {
@@ -78,6 +79,11 @@ onMounted(async () => {
     activeTab.value = 'reset-password';
     navigateTo({ path: route.path, query: {} }, { replace: true });
   }
+
+  // Инициализация высоты формы
+  nextTick(() => {
+    updateFormHeight();
+  });
 });
 
 onBeforeUnmount(() => {
@@ -86,10 +92,28 @@ onBeforeUnmount(() => {
   }
 });
 
+// Функция для обновления высоты формы
+function updateFormHeight() {
+  if (formWrapperRef.value) {
+    const activeForm = formWrapperRef.value.querySelector('.form-container');
+    if (activeForm) {
+      const height = activeForm.scrollHeight;
+      formWrapperRef.value.style.height = `${height}px`;
+    }
+  }
+}
+
 function setActiveTab(tab) {
+  if (activeTab.value === tab) return;
+
   activeTab.value = tab;
   authMessage.value = '';
   showForgotPassword.value = false;
+
+  // Обновляем высоту после изменения DOM
+  nextTick(() => {
+    updateFormHeight();
+  });
 }
 
 function handleLoginSuccess() {
@@ -97,20 +121,36 @@ function handleLoginSuccess() {
 }
 
 function handleRegisterSuccess() {
+  // Обновляем высоту после успешной регистрации
+  nextTick(() => {
+    updateFormHeight();
+  });
 }
 
 function handleForgotPassword(email) {
   showForgotPassword.value = true;
+  // Обновляем высоту после переключения на форму восстановления пароля
+  nextTick(() => {
+    updateFormHeight();
+  });
 }
 
 function handleBackToLogin() {
   showForgotPassword.value = false;
+  // Обновляем высоту после возврата к форме входа
+  nextTick(() => {
+    updateFormHeight();
+  });
 }
 
 function handleResetSuccess() {
   setTimeout(() => {
     activeTab.value = 'login';
     resetToken.value = '';
+    // Обновляем высоту после переключения на форму входа
+    nextTick(() => {
+      updateFormHeight();
+    });
   }, 3000);
 }
 
@@ -120,7 +160,7 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div>
+  <div class="container mx-auto px-4 max-w-6xl">
     <div v-if="status === 'authenticated'">
       <h1 class="mb-4 text-xl font-bold">
         Добро пожаловать, {{ (data?.user as any)?.fullName || 'Пользователь' }}
@@ -164,47 +204,114 @@ async function handleLogout() {
         </div>
       </div>
 
-      <div v-if="activeTab === 'reset-password'">
-        <ResetPasswordForm 
-          :token="resetToken" 
-          @reset-success="handleResetSuccess" 
-        />
-      </div>
-      <div v-else>
-        <div v-if="!showForgotPassword" class="flex border-b mb-4">
-          <button 
-            @click="setActiveTab('login')" 
-            class="py-2 px-4 font-medium"
-            :class="activeTab === 'login' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'"
-          >
-            Вход
-          </button>
-          <button 
-            @click="setActiveTab('register')" 
-            class="py-2 px-4 font-medium"
-            :class="activeTab === 'register' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'"
-          >
-            Регистрация
-          </button>
-        </div>
-
-        <div v-if="activeTab === 'login'">
-          <div v-if="showForgotPassword">
-            <ForgotPasswordForm @back-to-login="handleBackToLogin" />
-          </div>
-          <div v-else>
-            <LoginForm 
-              @login-success="handleLoginSuccess" 
-              @forgot-password="handleForgotPassword" 
+      <div class="relative overflow-hidden">
+        <Transition name="form-scale" mode="out-in" @after-enter="updateFormHeight">
+          <div v-if="activeTab === 'reset-password'" key="reset" class="max-w-3xl mx-auto form-container">
+            <ResetPasswordForm 
+              :token="resetToken" 
+              @reset-success="handleResetSuccess" 
             />
           </div>
-        </div>
-        <div v-else>
-          <RegisterForm @register-success="handleRegisterSuccess" />
-        </div>
+          <div v-else key="auth-forms" class="w-full">
+            <div v-if="!showForgotPassword" class="flex border-b mb-4 justify-center">
+              <button 
+                @click="setActiveTab('login')" 
+                class="py-2 px-4 font-medium"
+                :class="activeTab === 'login' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'"
+              >
+                Вход
+              </button>
+              <button 
+                @click="setActiveTab('register')" 
+                class="py-2 px-4 font-medium"
+                :class="activeTab === 'register' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'"
+              >
+                Регистрация
+              </button>
+            </div>
+
+            <div ref="formWrapperRef" class="relative overflow-hidden form-wrapper">
+              <Transition name="form-slide" mode="out-in" @after-enter="updateFormHeight">
+                <div v-if="activeTab === 'login'" key="login" class="max-w-md mx-auto form-container">
+                  <Transition name="form-fade" mode="out-in" @after-enter="updateFormHeight">
+                    <div v-if="showForgotPassword" key="forgot">
+                      <ForgotPasswordForm @back-to-login="handleBackToLogin" />
+                    </div>
+                    <div v-else key="login-form">
+                      <LoginForm 
+                        @login-success="handleLoginSuccess" 
+                        @forgot-password="handleForgotPassword" 
+                      />
+                    </div>
+                  </Transition>
+                </div>
+                <div v-else key="register" class="max-w-5xl mx-auto form-container">
+                  <RegisterForm @register-success="handleRegisterSuccess" />
+                </div>
+              </Transition>
+            </div>
+          </div>
+        </Transition>
       </div>
     </div>
   </div>
 </template>
 
-<style></style>
+<style>
+.form-slide-enter-active,
+.form-slide-leave-active {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  width: 100%;
+}
+
+.form-slide-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.form-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.form-fade-enter-active,
+.form-fade-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  width: 100%;
+}
+
+.form-fade-enter-from,
+.form-fade-leave-to {
+  opacity: 0;
+}
+
+.form-scale-enter-active,
+.form-scale-leave-active {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  width: 100%;
+}
+
+.form-scale-enter-from {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.form-scale-leave-to {
+  opacity: 0;
+  transform: scale(1.05);
+}
+
+.form-wrapper {
+  position: relative;
+  transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 200px;
+  overflow: hidden;
+}
+
+.form-container {
+  width: 100%;
+}
+</style>

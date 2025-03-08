@@ -2,7 +2,7 @@ import { Sequelize } from 'sequelize';
 import fs from 'fs';
 import path from 'path';
 
-const dbPath: string = 'E:/kvf/fest/server/database.sqlite';
+const dbPath: string = process.env.DATABASE_PATH || 'server/database.sqlite';
 console.log('Абсолютный путь к базе данных:', dbPath);
 
 const dbDir: string = path.dirname(dbPath);

@@ -6,27 +6,39 @@ import sequelize from '~/server/database';
 export interface UserAttributes {
   id: number;
   fullName: string;
+  spiritualName: string | null;
+  birthDate: Date | null;
   email: string;
+  phone: string | null;
+  city: string | null;
   password: string;
   isActive: boolean;
   emailVerificationToken: string | null;
   createdAt?: Date;
   updatedAt?: Date;
+  parentId: number | null;
 }
 
 
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt'> { }
+export interface UserCreationAttributes extends Optional<UserAttributes,
+  'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt' |
+  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId'> { }
 
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   declare id: number;
   declare fullName: string;
+  declare spiritualName: string | null;
+  declare birthDate: Date | null;
   declare email: string;
+  declare phone: string | null;
+  declare city: string | null;
   declare password: string;
   declare isActive: boolean;
   declare emailVerificationToken: string | null;
   declare createdAt?: Date;
   declare updatedAt?: Date;
+  declare parentId: number | null;
 
 
   async verifyPassword(password: string): Promise<boolean> {
@@ -52,6 +64,14 @@ User.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    spiritualName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    birthDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -59,6 +79,14 @@ User.init(
       validate: {
         isEmail: true
       }
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    city: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     password: {
       type: DataTypes.STRING,
@@ -72,6 +100,14 @@ User.init(
       type: DataTypes.STRING,
       allowNull: true,
       defaultValue: null
+    },
+    parentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'fest_users',
+        key: 'id'
+      }
     },
     createdAt: {
       type: DataTypes.DATE
@@ -98,5 +134,9 @@ User.init(
     },
   }
 );
+
+// Определяем связь родитель-ребенок
+User.hasMany(User, { as: 'children', foreignKey: 'parentId' });
+User.belongsTo(User, { as: 'parent', foreignKey: 'parentId' });
 
 export default User; 
