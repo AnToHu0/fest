@@ -2,6 +2,7 @@ import { NuxtAuthHandler } from "#auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import models from "~/server/models";
 import { User } from "~/server/models/User";
+import { Role } from "~/server/models/Role";
 
 export default NuxtAuthHandler({
   secret: process.env.AUTH_SECRET,
@@ -16,7 +17,13 @@ export default NuxtAuthHandler({
       name: "credentials",
       credentials: {},
       async authorize(credentials: { email: string; password: string }) {
-        const user = await User.findOne({ where: { email: credentials.email } });
+        const user = await User.findOne({ 
+          where: { email: credentials.email },
+          include: [{
+            model: Role,
+            through: { attributes: [] } // Исключаем атрибуты промежуточной таблицы
+          }]
+        });
 
         if (!user) {
           throw createError({
@@ -45,8 +52,10 @@ export default NuxtAuthHandler({
           });
         }
 
+        const userData = user.get();
         return {
-          ...user.get(),
+          ...userData,
+          roles: userData.Roles.map((role: any) => role.name),
           password: undefined,
         };
       },

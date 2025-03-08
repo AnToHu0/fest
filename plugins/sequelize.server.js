@@ -12,13 +12,13 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     await sequelize.authenticate();
     console.log('Соединение с базой данных установлено успешно.');
 
-    // Синхронизируем модели с базой данных без изменения структуры
-    await User.sync({ force: false });
-    await Role.sync({ force: false });
-    await UserRole.sync({ force: false });
+    // Синхронизируем модели с базой данных
+    await User.sync();
+    await Role.sync();
+    await UserRole.sync();
 
     // Синхронизируем остальные модели
-    await sequelize.sync({ force: false });
+    await sequelize.sync();
     console.log('Все модели синхронизированы с базой данных.');
 
     // Инициализируем роли

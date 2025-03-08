@@ -5,10 +5,23 @@ definePageMeta({
 });
 
 import Loader from '~/components/ui/Loader.vue';
+import { useRoles } from '~/composables/useRoles';
+
+const { hasRole } = useRoles();
 
 const festivals = ref<any[]>([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
+
+// Проверяем, есть ли у пользователя роль user
+const canAccessFestivals = computed(() => hasRole('user'));
+
+// Если у пользователя нет роли user, перенаправляем его на главную страницу дашборда
+onMounted(() => {
+  if (!canAccessFestivals.value) {
+    navigateTo('/dashboard');
+  }
+});
 
 // Загрузка данных о фестивалях
 const fetchFestivals = async () => {

@@ -38,12 +38,32 @@ UserRole.init(
   {
     tableName: 'fest_user_roles',
     sequelize,
-    timestamps: true
+    timestamps: true,
+    indexes: [
+      {
+        fields: ['userId', 'roleId'],
+        unique: false,
+        name: 'user_role_composite'
+      }
+    ]
   }
 );
 
 // Определяем связи
-User.belongsToMany(Role, { through: UserRole, foreignKey: 'userId' });
-Role.belongsToMany(User, { through: UserRole, foreignKey: 'roleId' });
+User.belongsToMany(Role, { 
+  through: {
+    model: UserRole,
+    unique: false
+  },
+  foreignKey: 'userId'
+});
+
+Role.belongsToMany(User, { 
+  through: {
+    model: UserRole,
+    unique: false
+  },
+  foreignKey: 'roleId'
+});
 
 export default UserRole; 

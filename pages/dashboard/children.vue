@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import ChildrenTable from '~/components/user/ChildrenTable.vue';
 import type { User } from '~/types/user';
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
+import { useRoles } from '~/composables/useRoles';
 
 definePageMeta({
   layout: 'dashboard',
@@ -10,6 +11,17 @@ definePageMeta({
 
 const { data: session } = useAuth();
 const user = computed(() => session.value?.user as unknown as User);
+const { hasRole } = useRoles();
+
+// Проверяем, есть ли у пользователя роль user
+const canAccessChildren = computed(() => hasRole('user'));
+
+// Если у пользователя нет роли user, перенаправляем его на главную страницу дашборда
+onMounted(() => {
+  if (!canAccessChildren.value) {
+    navigateTo('/dashboard');
+  }
+});
 
 // Заголовок страницы
 useHead({
