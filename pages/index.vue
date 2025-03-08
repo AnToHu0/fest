@@ -146,9 +146,10 @@ async function handleLogout() {
     </div>
 
     <div v-else>
-      <div v-if="!showForgotPassword && activeTab !== 'reset-password'" class="text-center mb-6">
-        <h1 class="text-2xl font-bold mb-2">Фестиваль</h1>
-        <p class="text-gray-600">Войдите или зарегистрируйтесь для доступа к системе</p>
+      <div class="text-center mb-8">
+        <img src="/img/logo.png" alt="Крымский Вайшнавский Фестиваль" class="mx-auto mb-4 max-w-xs">
+        <h1 class="text-2xl font-bold mb-2">Крымский Вайшнавский Фестиваль</h1>
+        <p v-if="!showForgotPassword && activeTab !== 'reset-password'" class="text-gray-600">Войдите или зарегистрируйтесь для доступа к системе</p>
         <p v-if="authMessage" class="text-red-500 mt-2 font-medium">{{ authMessage }}</p>
         
         <div v-if="verificationStatus.loading" class="mt-4 p-4 bg-blue-100 text-blue-700 rounded">
@@ -161,14 +162,6 @@ async function handleLogout() {
             Автоматический вход через {{ verificationStatus.autoLoginCountdown }} сек...
           </p>
         </div>
-      </div>
-
-      <div v-if="(showForgotPassword || activeTab === 'reset-password') && verificationStatus.message" class="mt-4 mb-6 p-4 rounded" 
-        :class="verificationStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-        <p>{{ verificationStatus.message }}</p>
-        <p v-if="verificationStatus.autoLoginCountdown > 0" class="mt-2 font-medium">
-          Автоматический вход через {{ verificationStatus.autoLoginCountdown }} сек...
-        </p>
       </div>
 
       <div v-if="activeTab === 'reset-password'">

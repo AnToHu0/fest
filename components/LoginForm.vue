@@ -29,7 +29,6 @@ function handleForgotPassword() {
 </script>
 <template>
   <div>
-    <h1 class="mb-4 text-xl font-bold">Вход</h1>
     <form @submit.prevent="handleLogin">
       <input
         v-model="form.email"
