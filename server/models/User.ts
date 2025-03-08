@@ -2,7 +2,7 @@ import { Model, DataTypes, Optional, Sequelize } from 'sequelize';
 import bcrypt from 'bcrypt';
 import sequelize from '~/server/database';
 
-// Атрибуты модели User
+
 export interface UserAttributes {
   id: number;
   fullName: string;
@@ -13,10 +13,10 @@ export interface UserAttributes {
   updatedAt?: Date;
 }
 
-// Атрибуты для создания нового пользователя
+
 export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'emailConfirmed' | 'createdAt' | 'updatedAt'> { }
 
-// Класс модели User
+
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   declare id: number;
   declare fullName: string;
@@ -26,19 +26,19 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare createdAt?: Date;
   declare updatedAt?: Date;
 
-  // Метод для проверки пароля
+  
   async verifyPassword(password: string): Promise<boolean> {
     return await bcrypt.compare(password, this.password);
   }
 
-  // Статический метод для хеширования пароля
+  
   static async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
     return await bcrypt.hash(password, saltRounds);
   }
 }
 
-// Инициализация модели
+
 User.init(
   {
     id: {

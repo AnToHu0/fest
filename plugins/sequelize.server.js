@@ -8,7 +8,6 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     await sequelize.authenticate();
     console.log('Connection to the database has been established successfully.');
 
-    // Синхронизация моделей с базой данных
     await sequelize.sync();
 
     return {

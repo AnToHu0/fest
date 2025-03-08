@@ -1,7 +1,7 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
 
-// Атрибуты модели FestRoom
+
 export interface FestRoomAttributes {
   id: number;
   building: number;
@@ -11,10 +11,10 @@ export interface FestRoomAttributes {
   desc: string;
 }
 
-// Атрибуты для создания новой комнаты
+
 export interface FestRoomCreationAttributes extends Optional<FestRoomAttributes, 'id' | 'desc'> { }
 
-// Класс модели FestRoom
+
 export class FestRoom extends Model<FestRoomAttributes, FestRoomCreationAttributes> implements FestRoomAttributes {
   declare id: number;
   declare building: number;
@@ -23,13 +23,13 @@ export class FestRoom extends Model<FestRoomAttributes, FestRoomCreationAttribut
   declare size: number;
   declare desc: string;
 
-  // Ассоциации
+  
   static associate(models: any) {
     this.hasMany(models.FestPlacement, { foreignKey: 'room_id', as: 'Placements' });
   }
 }
 
-// Инициализация модели
+
 FestRoom.init(
   {
     id: {

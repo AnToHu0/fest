@@ -1,7 +1,7 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
 
-// Атрибуты модели PaymentTransaction
+
 export interface PaymentTransactionAttributes {
   id: number;
   customer_id: number;
@@ -12,10 +12,10 @@ export interface PaymentTransactionAttributes {
   date: Date | null;
 }
 
-// Атрибуты для создания новой транзакции
+
 export interface PaymentTransactionCreationAttributes extends Optional<PaymentTransactionAttributes, 'id' | 'payment_type' | 'payment_dest' | 'date'> { }
 
-// Класс модели PaymentTransaction
+
 export class PaymentTransaction extends Model<PaymentTransactionAttributes, PaymentTransactionCreationAttributes> implements PaymentTransactionAttributes {
   declare id: number;
   declare customer_id: number;
@@ -25,14 +25,14 @@ export class PaymentTransaction extends Model<PaymentTransactionAttributes, Paym
   declare amount: number;
   declare date: Date | null;
 
-  // Ассоциации
+  
   static associate(models: any) {
     this.belongsTo(models.User, { foreignKey: 'customer_id', as: 'User' });
     this.belongsTo(models.User, { foreignKey: 'admin_id', as: 'Registrator' });
   }
 }
 
-// Инициализация модели
+
 PaymentTransaction.init(
   {
     id: {

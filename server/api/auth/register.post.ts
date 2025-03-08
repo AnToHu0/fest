@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     }
 
     user = await User.create({ fullName, email, password });
-    // Here you would typically send a confirmation email
+
     return { message: 'Пользователь зарегистрирован', userId: user.id };
   } catch (error: any) {
     throw createError({
