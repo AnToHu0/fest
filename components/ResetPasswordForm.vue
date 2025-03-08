@@ -16,7 +16,39 @@ const error = ref('');
 const successMessage = ref('');
 const resetComplete = ref(false);
 
-const emit = defineEmits(['reset-success']);
+const emit = defineEmits(['reset-success', 'error-change']);
+
+// Следим за изменением ошибки и уведомляем родительский компонент
+watch(error, (newValue) => {
+  emit('error-change', newValue);
+  // Даем время для обновления DOM
+  nextTick(() => {
+    // Находим ближайший родительский элемент с классом form-wrapper
+    const formWrapper = document.querySelector('.form-wrapper') as HTMLElement;
+    if (formWrapper) {
+      const activeForm = formWrapper.querySelector('.form-container');
+      if (activeForm) {
+        const height = activeForm.scrollHeight;
+        formWrapper.style.height = `${height}px`;
+      }
+    }
+  });
+});
+
+// Также следим за изменением статуса сброса пароля
+watch(resetComplete, () => {
+  nextTick(() => {
+    // Находим ближайший родительский элемент с классом form-wrapper
+    const formWrapper = document.querySelector('.form-wrapper') as HTMLElement;
+    if (formWrapper) {
+      const activeForm = formWrapper.querySelector('.form-container');
+      if (activeForm) {
+        const height = activeForm.scrollHeight;
+        formWrapper.style.height = `${height}px`;
+      }
+    }
+  });
+});
 
 async function handleSubmit() {
   if (form.value.password !== form.value.confirmPassword) {
@@ -39,7 +71,7 @@ async function handleSubmit() {
         token: props.token,
         password: form.value.password
       }
-    });
+    }) as any;
 
     resetComplete.value = true;
     successMessage.value = response.message || 'Пароль успешно изменен';

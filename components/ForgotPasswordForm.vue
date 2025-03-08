@@ -5,7 +5,39 @@ const error = ref('');
 const successMessage = ref('');
 const requestSent = ref(false);
 
-const emit = defineEmits(['back-to-login']);
+const emit = defineEmits(['back-to-login', 'error-change']);
+
+// Следим за изменением ошибки и уведомляем родительский компонент
+watch(error, (newValue) => {
+  emit('error-change', newValue);
+  // Даем время для обновления DOM
+  nextTick(() => {
+    // Находим ближайший родительский элемент с классом form-wrapper
+    const formWrapper = document.querySelector('.form-wrapper') as HTMLElement;
+    if (formWrapper) {
+      const activeForm = formWrapper.querySelector('.form-container');
+      if (activeForm) {
+        const height = activeForm.scrollHeight;
+        formWrapper.style.height = `${height}px`;
+      }
+    }
+  });
+});
+
+// Также следим за изменением статуса отправки запроса
+watch(requestSent, () => {
+  nextTick(() => {
+    // Находим ближайший родительский элемент с классом form-wrapper
+    const formWrapper = document.querySelector('.form-wrapper') as HTMLElement;
+    if (formWrapper) {
+      const activeForm = formWrapper.querySelector('.form-container');
+      if (activeForm) {
+        const height = activeForm.scrollHeight;
+        formWrapper.style.height = `${height}px`;
+      }
+    }
+  });
+});
 
 async function handleSubmit() {
   if (!email.value) {
@@ -20,7 +52,7 @@ async function handleSubmit() {
     const response = await $fetch('/api/auth/forgot-password', {
       method: 'POST',
       body: { email: email.value }
-    });
+    }) as any;
 
     requestSent.value = true;
     successMessage.value = response.message || 'Инструкции по восстановлению пароля отправлены на ваш email';

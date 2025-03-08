@@ -1,19 +1,32 @@
 <script lang="ts" setup>
+definePageMeta({
+  middleware: "guest",
+});
+
 const { status, data, signOut, signIn } = useAuth();
 const route = useRoute();
 
 const activeTab = ref('login');
 const authMessage = ref('');
-const verificationStatus = ref<{ loading: boolean, success?: boolean, message?: string, email?: string, autoLoginCountdown?: number }>({ loading: false });
-const autoLoginTimer = ref(null);
+const verificationStatus = ref<{
+  loading: boolean,
+  success?: boolean,
+  message?: string,
+  email?: string,
+  autoLoginCountdown?: number
+}>({ loading: false });
+const autoLoginTimer = ref<ReturnType<typeof setInterval> | null>(null);
 const showForgotPassword = ref(false);
 const resetToken = ref('');
-const formWrapperRef = ref(null);
+const formWrapperRef = ref<HTMLElement | null>(null);
 
 onMounted(async () => {
   if (route.query.requireAuth === 'true') {
     activeTab.value = 'login';
     authMessage.value = 'Для доступа к этой странице необходимо войти в систему';
+
+    // Очищаем параметр requireAuth из URL
+    navigateTo({ path: route.path, query: {} }, { replace: true });
   }
 
   const token = route.query.token as string;
@@ -49,9 +62,9 @@ onMounted(async () => {
                   callbackUrl: '/'
                 }).then((result) => {
                   if (result?.error) {
-                    authMessage.value = `Не удалось выполнить автоматический вход: ${result.error}`;
+                    console.error('Ошибка автоматического входа:', result.error);
                   } else {
-                    refreshNuxtData();
+                    navigateTo('/dashboard');
                   }
                 }).catch(error => {
                   authMessage.value = 'Не удалось выполнить автоматический вход. Пожалуйста, войдите вручную.';
@@ -103,7 +116,7 @@ function updateFormHeight() {
   }
 }
 
-function setActiveTab(tab) {
+function setActiveTab(tab: string) {
   if (activeTab.value === tab) return;
 
   activeTab.value = tab;
@@ -127,7 +140,7 @@ function handleRegisterSuccess() {
   });
 }
 
-function handleForgotPassword(email) {
+function handleForgotPassword(email: string) {
   showForgotPassword.value = true;
   // Обновляем высоту после переключения на форму восстановления пароля
   nextTick(() => {
@@ -209,7 +222,8 @@ async function handleLogout() {
           <div v-if="activeTab === 'reset-password'" key="reset" class="max-w-3xl mx-auto form-container">
             <ResetPasswordForm 
               :token="resetToken" 
-              @reset-success="handleResetSuccess" 
+              @reset-success="handleResetSuccess"
+              @error-change="updateFormHeight"
             />
           </div>
           <div v-else key="auth-forms" class="w-full">
@@ -235,12 +249,16 @@ async function handleLogout() {
                 <div v-if="activeTab === 'login'" key="login" class="max-w-md mx-auto form-container">
                   <Transition name="form-fade" mode="out-in" @after-enter="updateFormHeight">
                     <div v-if="showForgotPassword" key="forgot">
-                      <ForgotPasswordForm @back-to-login="handleBackToLogin" />
+                      <ForgotPasswordForm 
+                        @back-to-login="handleBackToLogin" 
+                        @error-change="updateFormHeight"
+                      />
                     </div>
                     <div v-else key="login-form">
                       <LoginForm 
                         @login-success="handleLoginSuccess" 
-                        @forgot-password="handleForgotPassword" 
+                        @forgot-password="handleForgotPassword"
+                        @error-change="updateFormHeight"
                       />
                     </div>
                   </Transition>

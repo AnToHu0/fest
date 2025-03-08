@@ -1,9 +1,18 @@
+<script setup>
+const { status } = useAuth();
+const router = useRouter();
+const route = useRoute();
+
+onMounted(() => {
+  // Если пользователь авторизован и находится на главной странице, перенаправляем его в личный кабинет
+  if (status.value === 'authenticated' && route.path === '/') {
+    router.push('/dashboard');
+  }
+});
+</script>
+
 <template>
-  <div class="h-[100vh] flex items-center justify-center bg-gray-100">
-    <div
-      class="p-5 rounded-xl bg-white max-w-2xl flex-1 text-center border shadow-2xl"
-    >
-      <NuxtPage />
-    </div>
-  </div>
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
 </template>

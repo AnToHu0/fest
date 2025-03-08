@@ -165,6 +165,9 @@ async function handleFormSubmit() {
         </ol>
       </div>
       <p class="mt-3 text-sm text-gray-600">Если вы не получили письмо, проверьте папку "Спам" или попробуйте зарегистрироваться снова с другим email-адресом.</p>
+      <div class="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-blue-700 text-sm">
+        <p><strong>Важно:</strong> Вы сможете войти в личный кабинет только после подтверждения email. После подтверждения вы будете автоматически перенаправлены в личный кабинет.</p>
+      </div>
     </div>
     
     <form v-else @submit.prevent="handleFormSubmit" class="space-y-2 py-2">
