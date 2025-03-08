@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import Loader from '~/components/ui/Loader.vue';
+import type { User } from '~/types/user';
 
-const { data, status } = useAuth();
+const { data: session, status, signOut } = useAuth();
 const route = useRoute();
 const router = useRouter();
 
 // Проверка загрузки данных
 const isLoading = computed(() => status.value === 'loading');
 
-// Используем any для типа пользователя, так как структура может отличаться
-const user = computed(() => data.value?.user as any);
+// Получаем данные пользователя
+const user = computed(() => session.value?.user as unknown as User);
 
 // Определяем пункты меню с иконками
 const menuItems = [
@@ -24,15 +25,19 @@ const menuItems = [
     icon: 'mdi:account'
   },
   { 
-    path: '/dashboard/festivals', 
-    label: 'Фестивали',
+    path: '/dashboard/children', 
+    label: 'Дети',
+    icon: 'mdi:account-child'
+  },
+  { 
+    path: '/dashboard/events', 
+    label: 'Мероприятия',
     icon: 'mdi:calendar'
   }
 ];
 
 // Функция для выхода из системы
 const handleSignOut = async () => {
-  const { signOut } = useAuth();
   await signOut({ redirect: true, callbackUrl: '/' });
 };
 </script>

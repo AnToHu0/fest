@@ -344,7 +344,7 @@ onMounted(async () => {
     
     <!-- Модальное окно для смены пароля -->
     <Modal
-      :is-open="isChangePasswordModalOpen"
+      v-if="isChangePasswordModalOpen"
       title="Смена пароля"
       @close="closeChangePasswordModal"
     >
