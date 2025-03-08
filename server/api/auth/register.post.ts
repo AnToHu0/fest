@@ -1,4 +1,7 @@
 import { User } from "~/server/models/User";
+import { sendEmail } from "~/server/utils/mailer";
+import { generateVerificationToken } from "~/server/utils/mailer";
+import { generateVerificationEmail } from "~/server/email/verification";
 
 interface RegistrationBody {
   fullName: string;
@@ -20,9 +23,36 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    user = await User.create({ fullName, email, password });
+    const emailVerificationToken = generateVerificationToken();
 
-    return { message: 'Пользователь зарегистрирован', userId: user.id };
+    user = await User.create({
+      fullName,
+      email,
+      password,
+      isActive: false,
+      emailVerificationToken
+    });
+
+    const config = useRuntimeConfig();
+    const baseURL = config.baseURL;
+    const verificationUrl = `${baseURL}?token=${emailVerificationToken}`;
+
+    const emailHtml = generateVerificationEmail({
+      fullName: user.fullName,
+      verificationToken: emailVerificationToken
+    });
+
+    await sendEmail({
+      to: user.email,
+      subject: "Спасибо за регистрацию на сайте Крымского Вайшнавского Фестиваля",
+      html: emailHtml,
+      verificationUrl: verificationUrl
+    });
+
+    return {
+      message: 'Пользователь зарегистрирован. Пожалуйста, проверьте вашу электронную почту для подтверждения регистрации.',
+      userId: user.id
+    };
   } catch (error: any) {
     throw createError({
       statusCode: 400,
