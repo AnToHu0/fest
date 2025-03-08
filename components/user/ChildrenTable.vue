@@ -4,6 +4,7 @@ import Modal from '~/components/ui/Modal.vue';
 import Loader from '~/components/ui/Loader.vue';
 import ChildForm from './ChildForm.vue';
 import type { Child, User } from '~/types/user';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.vue';
 
 const props = defineProps({
   userId: {
@@ -13,6 +14,10 @@ const props = defineProps({
   parentData: {
     type: Object as () => User,
     required: true
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -25,13 +30,19 @@ const errorMessage = ref('');
 const deleteConfirmationOpen = ref(false);
 const childToDelete = ref<Child | null>(null);
 
+// Состояние диалога подтверждения удаления
+const isConfirmDialogOpen = ref(false);
+
 // Загрузка списка детей
 const fetchChildren = async () => {
   isLoading.value = true;
   errorMessage.value = '';
   
   try {
-    const data = await $fetch<Child[]>('/api/user/children');
+    // Выбираем эндпоинт в зависимости от того, чьих детей загружаем
+    const endpoint = `/api/admin/users/${props.userId}/children`;
+      
+    const data = await $fetch<Child[]>(endpoint);
     children.value = data;
   } catch (error: any) {
     console.error('Ошибка при загрузке списка детей:', error);
@@ -90,38 +101,43 @@ const handleSaved = () => {
   fetchChildren();
 };
 
-// Открытие подтверждения удаления
-const confirmDelete = (child: Child) => {
+// Обработка удаления ребенка
+const handleDelete = (child: Child) => {
   childToDelete.value = child;
-  deleteConfirmationOpen.value = true;
+  isConfirmDialogOpen.value = true;
 };
 
-// Закрытие подтверждения удаления
-const closeDeleteConfirmation = () => {
-  deleteConfirmationOpen.value = false;
+// Подтверждение удаления ребенка
+const confirmDelete = async () => {
+  if (childToDelete.value) {
+    isLoading.value = true;
+    errorMessage.value = '';
+    
+    try {
+      const url = props.isAdmin
+        ? `/api/admin/users/${props.userId}/children/${childToDelete.value.id}`
+        : `/api/user/children/${childToDelete.value.id}`;
+        
+      await $fetch(url, {
+        method: 'DELETE'
+      });
+      
+      fetchChildren();
+    } catch (error: any) {
+      console.error('Ошибка при удалении ребенка:', error);
+      errorMessage.value = error.data?.message || 'Ошибка при удалении ребенка';
+    } finally {
+      isLoading.value = false;
+    }
+  }
+  isConfirmDialogOpen.value = false;
   childToDelete.value = null;
 };
 
-// Удаление ребенка
-const deleteChild = async () => {
-  if (!childToDelete.value) return;
-  
-  isLoading.value = true;
-  errorMessage.value = '';
-  
-  try {
-    await $fetch(`/api/user/children/${childToDelete.value.id}`, {
-      method: 'DELETE'
-    });
-    
-    closeDeleteConfirmation();
-    fetchChildren();
-  } catch (error: any) {
-    console.error('Ошибка при удалении ребенка:', error);
-    errorMessage.value = error.data?.message || 'Ошибка при удалении ребенка';
-  } finally {
-    isLoading.value = false;
-  }
+// Отмена удаления ребенка
+const cancelDelete = () => {
+  isConfirmDialogOpen.value = false;
+  childToDelete.value = null;
 };
 
 // Загрузка данных при монтировании компонента
@@ -192,15 +208,17 @@ onMounted(() => {
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <button
                 @click="openEditChildModal(child)"
-                class="text-blue-600 hover:text-blue-900 mr-4"
+                class="text-blue-600 hover:text-blue-900 mr-3"
+                title="Редактировать"
               >
-                Редактировать
+                <Icon name="mdi:pencil" class="w-5 h-5" />
               </button>
               <button
-                @click="confirmDelete(child)"
+                @click="handleDelete(child)"
                 class="text-red-600 hover:text-red-900"
+                title="Удалить"
               >
-                Удалить
+                <Icon name="mdi:delete" class="w-5 h-5" />
               </button>
             </td>
           </tr>
@@ -218,39 +236,21 @@ onMounted(() => {
         :parentId="userId"
         :parentData="parentData"
         :childData="selectedChild"
+        :isAdmin="isAdmin"
         @saved="handleSaved"
         @cancel="closeModal"
       />
     </Modal>
     
-    <!-- Модальное окно подтверждения удаления -->
-    <Modal
-      v-if="deleteConfirmationOpen"
-      title="Подтверждение удаления"
-      @close="closeDeleteConfirmation"
-    >
-      <div class="p-4">
-        <p class="mb-4">Вы действительно хотите удалить ребенка "{{ childToDelete?.fullName }}"?</p>
-        <div class="flex justify-end space-x-3">
-          <button
-            @click="closeDeleteConfirmation"
-            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-          >
-            Отмена
-          </button>
-          <button
-            @click="deleteChild"
-            class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-            :disabled="isLoading"
-          >
-            <span v-if="isLoading" class="flex items-center">
-              <Loader size="sm" class="mr-2" />
-              <span>Удаление...</span>
-            </span>
-            <span v-else>Удалить</span>
-          </button>
-        </div>
-      </div>
-    </Modal>
+    <!-- Диалог подтверждения удаления -->
+    <ConfirmDialog
+      :is-open="isConfirmDialogOpen"
+      title="Удаление ребенка"
+      :message="childToDelete ? `Вы действительно хотите удалить ребенка ${childToDelete.fullName}?` : ''"
+      confirm-text="Удалить"
+      cancel-text="Отмена"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </div>
 </template> 

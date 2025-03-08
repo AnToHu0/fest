@@ -1,5 +1,6 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
+import type { Models } from './index';
 
 
 export interface PaymentTransactionAttributes {
@@ -26,7 +27,7 @@ export class PaymentTransaction extends Model<PaymentTransactionAttributes, Paym
   declare date: Date | null;
 
   
-  static associate(models: any) {
+  static associate(models: Models) {
     this.belongsTo(models.User, { foreignKey: 'customer_id', as: 'User' });
     this.belongsTo(models.User, { foreignKey: 'admin_id', as: 'Registrator' });
   }

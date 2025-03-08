@@ -12,22 +12,34 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Получение данных из запроса
-    const body = await readBody(event);
-
-    // @ts-ignore - Игнорируем ошибку типизации, так как мы знаем, что id существует
-    const userId = session.user.id;
-    const isAdmin = session.user.roles?.includes('admin');
-
-    // Проверка, что родитель указан корректно
-    if (!body.parentId) {
-      body.parentId = userId;
-    } else if (body.parentId !== userId && !isAdmin) {
+    // Проверка роли администратора
+    if (!session.user.roles?.includes('admin')) {
       throw createError({
         statusCode: 403,
-        message: 'Вы можете добавлять детей только к своему профилю'
+        message: 'Недостаточно прав'
       });
     }
+
+    // Получение ID пользователя из параметров запроса
+    const userId = getRouterParam(event, 'id');
+    if (!userId) {
+      throw createError({
+        statusCode: 400,
+        message: 'ID пользователя не указан'
+      });
+    }
+
+    // Проверка существования пользователя
+    const user = await models.User.findByPk(parseInt(userId));
+    if (!user) {
+      throw createError({
+        statusCode: 404,
+        message: 'Пользователь не найден'
+      });
+    }
+
+    // Получение данных из запроса
+    const body = await readBody(event);
 
     // Генерация уникального email для ребенка
     const timestamp = Date.now();
@@ -42,7 +54,7 @@ export default defineEventHandler(async (event) => {
       email: uniqueEmail, // Используем уникальный email
       city: body.city || null,
       password: await models.User.hashPassword(Math.random().toString(36).substring(2, 12)),
-      parentId: body.parentId,
+      parentId: parseInt(userId),
       isActive: true
     });
 

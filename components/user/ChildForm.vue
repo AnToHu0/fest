@@ -15,6 +15,10 @@ const props = defineProps({
   childData: {
     type: Object as () => Child | null,
     default: null
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -54,7 +58,7 @@ const initFormData = () => {
       spiritualName: props.childData.spiritualName || '',
       birthDate: props.childData.birthDate ? new Date(props.childData.birthDate).toISOString().split('T')[0] : '',
       city: props.childData.city || '',
-      parentId: props.childData.parentId
+      parentId: props.parentId
     };
     
     // Разбиваем полное имя на составляющие
@@ -65,6 +69,7 @@ const initFormData = () => {
   } else {
     // Заполняем данные из родителя при создании нового ребенка
     formData.value.city = props.parentData.city || '';
+    formData.value.parentId = props.parentId;
     
     // Очищаем составляющие имени
     lastName.value = '';
@@ -82,9 +87,19 @@ const submitForm = async () => {
   errorMessage.value = '';
   
   try {
-    const url = formData.value.id 
-      ? `/api/user/children/${formData.value.id}` 
-      : '/api/user/children';
+    let url;
+    
+    if (props.isAdmin) {
+      // Используем админские эндпоинты
+      url = formData.value.id 
+        ? `/api/admin/users/${props.parentId}/children/${formData.value.id}` 
+        : `/api/admin/users/${props.parentId}/children`;
+    } else {
+      // Используем обычные эндпоинты
+      url = formData.value.id 
+        ? `/api/user/children/${formData.value.id}` 
+        : '/api/user/children';
+    }
     
     const method = formData.value.id ? 'PUT' : 'POST';
     
