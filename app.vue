@@ -1,4 +1,6 @@
-<script setup>
+<script setup lang="ts">
+import GlobalLoader from '~/components/ui/GlobalLoader.vue';
+
 const { status } = useAuth();
 const router = useRouter();
 const route = useRoute();
@@ -12,7 +14,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <NuxtLayout>
-    <NuxtPage />
-  </NuxtLayout>
+  <div>
+    <GlobalLoader />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+  </div>
 </template>

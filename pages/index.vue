@@ -36,7 +36,7 @@ onMounted(async () => {
       try {
         const responseData = await $fetch(`/api/auth/verify-email?token=${token}`, {
           method: 'GET'
-        });
+        }) as any;
 
         if (responseData) {
           verificationStatus.value.success = true;
@@ -50,25 +50,29 @@ onMounted(async () => {
             verificationStatus.value.autoLoginCountdown = 3;
 
             autoLoginTimer.value = setInterval(() => {
-              verificationStatus.value.autoLoginCountdown--;
+              if (verificationStatus.value.autoLoginCountdown !== undefined) {
+                verificationStatus.value.autoLoginCountdown--;
 
-              if (verificationStatus.value.autoLoginCountdown <= 0) {
-                clearInterval(autoLoginTimer.value);
-
-                signIn('credentials', {
-                  email: responseData.email,
-                  password: '',
-                  redirect: false,
-                  callbackUrl: '/'
-                }).then((result) => {
-                  if (result?.error) {
-                    console.error('Ошибка автоматического входа:', result.error);
-                  } else {
-                    navigateTo('/dashboard');
+                if (verificationStatus.value.autoLoginCountdown <= 0) {
+                  if (autoLoginTimer.value) {
+                    clearInterval(autoLoginTimer.value as any);
                   }
-                }).catch(error => {
-                  authMessage.value = 'Не удалось выполнить автоматический вход. Пожалуйста, войдите вручную.';
-                });
+
+                  signIn('credentials', {
+                    email: responseData.email,
+                    password: '',
+                    redirect: false,
+                    callbackUrl: '/'
+                  }).then((result) => {
+                    if (result?.error) {
+                      console.error('Ошибка автоматического входа:', result.error);
+                    } else {
+                      navigateTo('/dashboard');
+                    }
+                  }).catch(error => {
+                    authMessage.value = 'Не удалось выполнить автоматический вход. Пожалуйста, войдите вручную.';
+                  });
+                }
               }
             }, 1000);
           }
@@ -211,7 +215,7 @@ async function handleLogout() {
         <div v-else-if="verificationStatus.message" class="mt-4 p-4 rounded" 
           :class="verificationStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
           <p>{{ verificationStatus.message }}</p>
-          <p v-if="verificationStatus.autoLoginCountdown > 0" class="mt-2 font-medium">
+          <p v-if="verificationStatus.autoLoginCountdown !== undefined && verificationStatus.autoLoginCountdown > 0" class="mt-2 font-medium">
             Автоматический вход через {{ verificationStatus.autoLoginCountdown }} сек...
           </p>
         </div>

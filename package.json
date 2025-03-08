@@ -11,6 +11,7 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
+    "@iconify-json/mdi": "^1.2.3",
     "@nuxt/devtools": "^1.5.2",
     "@nuxtjs/tailwindcss": "^6.8.0",
     "@sidebase/nuxt-auth": "^0.9.3",
@@ -19,6 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "next-auth": "4.21.1",
     "nuxt": "^3.13.2",
+    "nuxt-icon": "1.0.0-beta.7",
     "nuxt-server-utils": "^0.0.7",
     "sequelize": "^6.37.4",
     "sqlite3": "^5.1.7",
@@ -26,6 +28,10 @@
     "vue-router": "^4.2.5"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@fortawesome/fontawesome-svg-core": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/vue-fontawesome": "^3.0.8",
     "@types/nodemailer": "^6.4.17",
     "nodemailer": "^6.10.0"
   }
