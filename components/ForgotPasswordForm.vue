@@ -38,8 +38,6 @@ function goBackToLogin() {
 
 <template>
   <div>
-    <h1 class="mb-4 text-xl font-bold">Восстановление пароля</h1>
-    
     <div v-if="requestSent" class="bg-green-50 p-6 rounded-lg border border-green-200">
       <div class="text-green-700 font-semibold text-lg mb-2">Запрос отправлен!</div>
       <p class="text-gray-700 mb-4">{{ successMessage }}</p>
