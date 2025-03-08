@@ -16,6 +16,10 @@ const successMessage = ref('');
 const errorMessage = ref('');
 const isSuccessVisible = ref(false);
 const isChangePasswordModalOpen = ref(false);
+const { hasRole } = useRoles();
+
+// Проверяем, есть ли у пользователя роль user
+const canEditProfile = computed(() => hasRole('user'));
 
 // Форматирование телефона
 const formatPhone = (value: string) => {
@@ -175,6 +179,11 @@ onMounted(async () => {
 
     // Загружаем данные с сервера
     await fetchUserData();
+
+    // Если у пользователя нет роли user, перенаправляем его на главную страницу дашборда
+    if (!canEditProfile.value) {
+      navigateTo('/dashboard');
+    }
   } catch (error) {
     console.error('Ошибка при инициализации данных пользователя:', error);
     errorMessage.value = 'Ошибка при инициализации данных пользователя';

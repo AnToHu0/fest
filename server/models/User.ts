@@ -1,6 +1,7 @@
 import { Model, DataTypes, Optional, Sequelize } from 'sequelize';
 import bcrypt from 'bcrypt';
 import sequelize from '~/server/database';
+import { Role } from './Role';
 
 
 export interface UserAttributes {
@@ -17,12 +18,13 @@ export interface UserAttributes {
   createdAt?: Date;
   updatedAt?: Date;
   parentId: number | null;
+  Roles?: Role[];
 }
 
 
 export interface UserCreationAttributes extends Optional<UserAttributes,
   'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt' |
-  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId'> { }
+  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles'> { }
 
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -39,6 +41,7 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare createdAt?: Date;
   declare updatedAt?: Date;
   declare parentId: number | null;
+  declare Roles?: Role[];
 
 
   async verifyPassword(password: string): Promise<boolean> {

@@ -6,7 +6,7 @@ export interface User {
   phone?: string | null;
   city?: string | null;
   birthDate?: string | null;
-  role?: string;
+  roles?: string[];
   parentId?: number | null;
   isActive?: boolean;
 }

@@ -30,8 +30,6 @@ export async function initRoles() {
       defaults: role
     });
   }
-
-  console.log('Роли успешно инициализированы');
 }
 
 export default initRoles; 
