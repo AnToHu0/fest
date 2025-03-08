@@ -3,6 +3,8 @@ import { FestDepartment } from './FestDepartment';
 import { PaymentTransaction } from './PaymentTransaction';
 import { FestPlacement } from './FestPlacement';
 import { FestRoom } from './FestRoom';
+import { Role } from './Role';
+import { UserRole } from './UserRole';
 
 
 export interface Models {
@@ -11,6 +13,8 @@ export interface Models {
   PaymentTransaction: typeof PaymentTransaction;
   FestPlacement: typeof FestPlacement;
   FestRoom: typeof FestRoom;
+  Role: typeof Role;
+  UserRole: typeof UserRole;
   [key: string]: any;
 }
 
@@ -20,7 +24,9 @@ const models: Models = {
   FestDepartment,
   PaymentTransaction,
   FestPlacement,
-  FestRoom
+  FestRoom,
+  Role,
+  UserRole
 };
 
 
