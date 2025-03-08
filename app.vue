@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import GlobalLoader from '~/components/ui/GlobalLoader.vue';
 
+// Устанавливаем мета-теги для всего приложения
+useHead({
+  title: 'Крымский Вайшнавский Фестиваль',
+  meta: [
+    { name: 'description', content: 'Официальный сайт Крымского Вайшнавского Фестиваля' }
+  ]
+});
+
 const { status } = useAuth();
 const router = useRouter();
 const route = useRoute();
