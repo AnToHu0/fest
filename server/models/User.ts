@@ -7,31 +7,33 @@ export interface UserAttributes {
   id: number;
   fullName: string;
   email: string;
-  emailConfirmed: boolean;
   password: string;
+  isActive: boolean;
+  emailVerificationToken: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'emailConfirmed' | 'createdAt' | 'updatedAt'> { }
+export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt'> { }
 
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   declare id: number;
   declare fullName: string;
   declare email: string;
-  declare emailConfirmed: boolean;
   declare password: string;
+  declare isActive: boolean;
+  declare emailVerificationToken: string | null;
   declare createdAt?: Date;
   declare updatedAt?: Date;
 
-  
+
   async verifyPassword(password: string): Promise<boolean> {
     return await bcrypt.compare(password, this.password);
   }
 
-  
+
   static async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
     return await bcrypt.hash(password, saltRounds);
@@ -58,13 +60,18 @@ User.init(
         isEmail: true
       }
     },
-    emailConfirmed: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
     password: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    emailVerificationToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null
     },
     createdAt: {
       type: DataTypes.DATE

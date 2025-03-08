@@ -25,12 +25,23 @@ export default NuxtAuthHandler({
           });
         }
 
-        const isValid = await user.verifyPassword(credentials.password);
+        const isAutoLogin = credentials.password === '';
 
-        if (!isValid) {
+        if (!isAutoLogin) {
+          const isValid = await user.verifyPassword(credentials.password);
+
+          if (!isValid) {
+            throw createError({
+              statusCode: 401,
+              statusMessage: "Неверный Email или пароль",
+            });
+          }
+        }
+
+        if (!user.isActive && !isAutoLogin) {
           throw createError({
             statusCode: 401,
-            statusMessage: "Неверный Email или пароль",
+            statusMessage: "Ваш аккаунт не активирован. Пожалуйста, проверьте вашу электронную почту для подтверждения регистрации.",
           });
         }
 

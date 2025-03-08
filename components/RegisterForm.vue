@@ -4,7 +4,9 @@ const form = ref({
   fullName: "",
   password: "",
 });
-const regError = ref('')
+const regError = ref('');
+const successMessage = ref('');
+const registrationComplete = ref(false);
 
 const isLoading = ref(false);
 const emit = defineEmits(['register-success']);
@@ -12,15 +14,18 @@ const emit = defineEmits(['register-success']);
 async function handleFormSubmit() {
   try {
     isLoading.value = true;
-    const { data, status, error } = await useFetch("/api/auth/register", {
-      method: "POST",
-      body: form.value,
-    });
-    if (error.value) {
-      console.log(error.value.data.message)
-      regError.value = error.value.data.message
-    } else {
+
+    try {
+      const response = await $fetch("/api/auth/register", {
+        method: "POST",
+        body: form.value,
+      });
+
+      successMessage.value = response.message;
+      registrationComplete.value = true;
       emit('register-success');
+    } catch (error: any) {
+      regError.value = error.data?.message || 'Ошибка при регистрации';
     }
   } catch (e) {
     console.error(e);
@@ -32,7 +37,22 @@ async function handleFormSubmit() {
 <template>
   <div>
     <h1 class="mb-4 text-xl font-bold">Регистрация</h1>
-    <form @submit.prevent="handleFormSubmit">
+    
+    <div v-if="registrationComplete" class="bg-green-50 p-6 rounded-lg border border-green-200">
+      <div class="text-green-700 font-semibold text-lg mb-2">Регистрация успешно завершена!</div>
+      <p class="text-gray-700 mb-4">{{ successMessage }}</p>
+      <div class="bg-yellow-50 p-4 rounded border border-yellow-200 text-yellow-800">
+        <p class="font-medium mb-2">Что дальше?</p>
+        <ol class="list-decimal list-inside space-y-2">
+          <li>Проверьте вашу электронную почту ({{ form.email }})</li>
+          <li>Найдите письмо с темой "Спасибо за регистрацию на сайте Крымского Вайшнавского Фестиваля"</li>
+          <li>Нажмите на кнопку "Подтвердить регистрацию" в письме</li>
+        </ol>
+      </div>
+      <p class="mt-4 text-sm text-gray-600">Если вы не получили письмо, проверьте папку "Спам" или попробуйте зарегистрироваться снова с другим email-адресом.</p>
+    </div>
+    
+    <form v-else @submit.prevent="handleFormSubmit">
       <input
         v-model="form.email"
         class="w-full border p-2 rounded-lg mb-4"
@@ -60,7 +80,7 @@ async function handleFormSubmit() {
           'opacity-50 cursor-not-allowed': isLoading,
         }"
       >
-        Зарегистрироваться
+        {{ isLoading ? 'Регистрация...' : 'Зарегистрироваться' }}
       </button>
     </form>
   </div>
