@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { Festival } from '~/types/festival';
+
 definePageMeta({
   middleware: "auth",
   layout: "dashboard"
@@ -6,6 +8,36 @@ definePageMeta({
 
 const { data } = useAuth();
 const user = computed(() => data.value?.user as any);
+const router = useRouter();
+
+// Состояние загрузки и данные фестиваля
+const isLoading = ref(true);
+const festival = ref<Festival | null>(null);
+
+// Загрузка данных о последнем фестивале
+const fetchLastFestival = async () => {
+  isLoading.value = true;
+  try {
+    const response = await $fetch('/api/festivals');
+    if (response.success && response.festivals.length > 0) {
+      festival.value = response.festivals[0];
+    }
+  } catch (error) {
+    console.error('Ошибка при загрузке данных о фестивале:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Форматирование даты
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(date);
+};
 
 // Получаем текущее время суток
 const getTimeOfDay = () => {
@@ -46,7 +78,6 @@ const greeting = computed(() => {
     'день': 'Добрый', 
     'вечер': 'Добрый',
     'ночь': 'Доброй'
-    
   };
   return userName ? `${declension[timeOfDay]} ${timeOfDay}, ${userName}!` : `${declension[timeOfDay]} ${timeOfDay}!`;
 });
@@ -68,6 +99,11 @@ const quickLinks = [
     color: 'bg-green-500'
   }
 ];
+
+// Загружаем данные при монтировании компонента
+onMounted(() => {
+  fetchLastFestival();
+});
 </script>
 
 <template>
@@ -106,8 +142,47 @@ const quickLinks = [
         <Icon name="mdi:calendar" class="h-5 w-5 text-blue-500 mr-2" />
         <h2 class="text-xl font-semibold">Ближайший фестиваль</h2>
       </div>
-      <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+
+      <!-- Загрузка -->
+      <div v-if="isLoading" class="flex justify-center py-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+
+      <!-- Нет активного фестиваля -->
+      <div v-else-if="!festival" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
         <p class="text-blue-700">Информация о ближайшем фестивале будет доступна в ближайшее время.</p>
+      </div>
+
+      <!-- Информация о фестивале -->
+      <div v-else class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-medium text-gray-800">
+            Фестиваль {{ festival.year }}
+          </h3>
+          <div 
+            class="px-3 py-1 rounded-full text-sm"
+            :class="festival.isRegistered ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'"
+          >
+            {{ festival.isRegistered ? 'Вы зарегистрированы' : 'Регистрация открыта' }}
+          </div>
+        </div>
+        
+        <div class="text-sm text-gray-600">
+          <p class="mb-2">
+            <span class="font-medium">Даты проведения:</span> 
+            {{ formatDate(festival.startDate) }} - {{ formatDate(festival.endDate) }}
+          </p>
+          <p v-if="festival.announcementText" class="text-gray-700 mb-4">
+            {{ festival.announcementText }}
+          </p>
+          <button 
+            @click="router.push('/dashboard/festivals')"
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <span>Подробнее</span>
+            <Icon name="mdi:arrow-right" class="w-4 h-4 ml-2" />
+          </button>
+        </div>
       </div>
     </div>
   </div>
