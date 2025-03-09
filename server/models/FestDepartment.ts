@@ -28,8 +28,8 @@ export class FestDepartment extends Model<FestDepartmentAttributes, FestDepartme
         model: models.FestDepartmentAdmin,
         unique: false
       },
-      foreignKey: 'department_id',
-      otherKey: 'user_id',
+      foreignKey: 'departmentId',
+      otherKey: 'userId',
       as: 'Admins'
     });
     
@@ -38,8 +38,8 @@ export class FestDepartment extends Model<FestDepartmentAttributes, FestDepartme
         model: models.FestFestivalDepartment,
         unique: false
       },
-      foreignKey: 'department_id',
-      otherKey: 'festival_id',
+      foreignKey: 'departmentId',
+      otherKey: 'festivalId',
       as: 'Festivals'
     });
   }
@@ -61,8 +61,7 @@ FestDepartment.init(
     isPublic: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      defaultValue: true,
-      field: 'public' // Сохраняем имя поля в базе данных как 'public'
+      defaultValue: true
     },
     joinText: {
       type: DataTypes.TEXT,

@@ -1,6 +1,7 @@
-import { Model, DataTypes } from 'sequelize';
-import sequelize from './database';
+import { Model, DataTypes, Optional, Sequelize } from 'sequelize';
 import bcrypt from 'bcrypt';
+import sequelize from './database';
+import { Role } from './Role';
 
 export interface UserAttributes {
   id: number;
@@ -18,10 +19,14 @@ export interface UserAttributes {
   createdAt?: Date;
   updatedAt?: Date;
   parentId: number | null;
-  children?: UserAttributes[];
+  Roles?: Role[];
 }
 
-export class User extends Model {
+export interface UserCreationAttributes extends Optional<UserAttributes,
+  'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt' |
+  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles' | 'searchField' | 'adminNotes'> { }
+
+export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   declare id: number;
   declare fullName: string;
   declare spiritualName: string | null;
@@ -34,18 +39,31 @@ export class User extends Model {
   declare emailVerificationToken: string | null;
   declare searchField: string;
   declare adminNotes: string | null;
-  declare createdAt: Date;
-  declare updatedAt: Date;
+  declare createdAt?: Date;
+  declare updatedAt?: Date;
   declare parentId: number | null;
-  declare children?: User[];
+  declare Roles?: Role[];
+
+  // Добавляем метод setRoles
+  declare setRoles: (roles: Role[], options?: any) => Promise<void>;
 
   async verifyPassword(password: string): Promise<boolean> {
-    return await bcrypt.compare(password, this.password);
+    try {
+      return await bcrypt.compare(password, this.password);
+    } catch (error) {
+      console.error('Ошибка при проверке пароля:', error);
+      return false;
+    }
   }
 
   static async hashPassword(password: string): Promise<string> {
-    const saltRounds = 10;
-    return await bcrypt.hash(password, saltRounds);
+    try {
+      const saltRounds = 10;
+      return await bcrypt.hash(password, saltRounds);
+    } catch (error) {
+      console.error('Ошибка при хешировании пароля:', error);
+      throw error;
+    }
   }
 }
 
@@ -58,15 +76,15 @@ User.init(
     },
     fullName: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     spiritualName: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     birthDate: {
       type: DataTypes.DATE,
-      allowNull: true
+      allowNull: true,
     },
     email: {
       type: DataTypes.STRING,
@@ -78,11 +96,11 @@ User.init(
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     city: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     password: {
       type: DataTypes.STRING,
@@ -97,6 +115,16 @@ User.init(
       allowNull: true,
       defaultValue: null
     },
+    parentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'fest_users',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
+    },
     searchField: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -106,14 +134,6 @@ User.init(
       type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: null
-    },
-    parentId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'fest_users',
-        key: 'id'
-      }
     },
     createdAt: {
       type: DataTypes.DATE
@@ -128,39 +148,51 @@ User.init(
     timestamps: true,
     hooks: {
       beforeCreate: async (user: User) => {
-        if (user.password) {
-          user.password = await User.hashPassword(user.password);
-        }
-        user.searchField = [
-          user.fullName,
-          user.spiritualName,
-          user.city
-        ].filter(value => value != null && value !== '').join(' ').toLowerCase();
-      },
-      beforeUpdate: async (user: User) => {
-        if (user.changed('password')) {
-          user.password = await User.hashPassword(user.password);
-        }
-        if (user.changed('fullName') || user.changed('spiritualName') || user.changed('city')) {
+        try {
+          if (user.password) {
+            user.password = await User.hashPassword(user.password);
+          }
           user.searchField = [
             user.fullName,
             user.spiritualName,
             user.city
           ].filter(value => value != null && value !== '').join(' ').toLowerCase();
+        } catch (error) {
+          console.error('Ошибка в beforeCreate хуке:', error);
+          throw error;
+        }
+      },
+      beforeUpdate: async (user: User) => {
+        try {
+          if (user.changed('password')) {
+            user.password = await User.hashPassword(user.password);
+          }
+          if (user.changed('fullName') || user.changed('spiritualName') || user.changed('city')) {
+            user.searchField = [
+              user.fullName,
+              user.spiritualName,
+              user.city
+            ].filter(value => value != null && value !== '').join(' ').toLowerCase();
+          }
+        } catch (error) {
+          console.error('Ошибка в beforeUpdate хуке:', error);
+          throw error;
         }
       }
     }
   }
 );
 
-User.hasMany(User, {
-  as: 'children',
-  foreignKey: 'parentId'
+// Связь родитель-ребенок через parentId
+User.belongsTo(User, {
+  foreignKey: 'parentId',
+  as: 'parent'
 });
 
-User.belongsTo(User, {
-  as: 'parent',
-  foreignKey: 'parentId'
+// Связь с детьми
+User.hasMany(User, {
+  foreignKey: 'parentId',
+  as: 'children'
 });
 
 export default User; 

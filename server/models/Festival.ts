@@ -43,8 +43,8 @@ export class Festival extends Model<FestivalAttributes, FestivalCreationAttribut
         model: models.FestFestivalDepartment,
         unique: false
       },
-      foreignKey: 'festival_id',
-      otherKey: 'department_id',
+      foreignKey: 'festivalId',
+      otherKey: 'departmentId',
       as: 'Departments'
     });
   }

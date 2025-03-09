@@ -5,8 +5,8 @@ import type { Models } from './index';
 
 export interface FestFestivalDepartmentAttributes {
   id: number;
-  festival_id: number;
-  department_id: number;
+  festivalId: number;
+  departmentId: number;
 }
 
 
@@ -15,13 +15,13 @@ export interface FestFestivalDepartmentCreationAttributes extends Optional<FestF
 
 export class FestFestivalDepartment extends Model<FestFestivalDepartmentAttributes, FestFestivalDepartmentCreationAttributes> implements FestFestivalDepartmentAttributes {
   declare id: number;
-  declare festival_id: number;
-  declare department_id: number;
+  declare festivalId: number;
+  declare departmentId: number;
 
   
   static associate(models: Models) {
-    this.belongsTo(models.Festival, { foreignKey: 'festival_id', as: 'Festival' });
-    this.belongsTo(models.FestDepartment, { foreignKey: 'department_id', as: 'Department' });
+    this.belongsTo(models.Festival, { foreignKey: 'festivalId', as: 'Festival' });
+    this.belongsTo(models.FestDepartment, { foreignKey: 'departmentId', as: 'Department' });
   }
 }
 
@@ -33,9 +33,10 @@ FestFestivalDepartment.init(
       primaryKey: true,
       autoIncrement: true
     },
-    festival_id: {
+    festivalId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      field: 'festivalId',
       references: {
         model: 'fest_festivals',
         key: 'id'
@@ -43,9 +44,10 @@ FestFestivalDepartment.init(
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    department_id: {
+    departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      field: 'departmentId',
       references: {
         model: 'fest_departments',
         key: 'id'
@@ -61,7 +63,7 @@ FestFestivalDepartment.init(
     indexes: [
       {
         unique: false,
-        fields: ['festival_id', 'department_id'],
+        fields: ['festivalId', 'departmentId'],
         name: 'fest_festival_departments_index'
       }
     ]

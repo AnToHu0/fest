@@ -5,10 +5,10 @@ import type { Models } from './index';
 
 export interface FestPlacementAttributes {
   id: number;
-  room_id: number;
+  roomId: number;
   slot: number;
-  manager_id: number;
-  user_id: number;
+  managerId: number;
+  userId: number;
   type: string;
   datefrom: Date | null;
   dateto: Date | null;
@@ -21,10 +21,10 @@ export interface FestPlacementCreationAttributes extends Optional<FestPlacementA
 
 export class FestPlacement extends Model<FestPlacementAttributes, FestPlacementCreationAttributes> implements FestPlacementAttributes {
   declare id: number;
-  declare room_id: number;
+  declare roomId: number;
   declare slot: number;
-  declare manager_id: number;
-  declare user_id: number;
+  declare managerId: number;
+  declare userId: number;
   declare type: string;
   declare datefrom: Date | null;
   declare dateto: Date | null;
@@ -32,9 +32,9 @@ export class FestPlacement extends Model<FestPlacementAttributes, FestPlacementC
 
   
   static associate(models: Models) {
-    this.belongsTo(models.FestRoom, { foreignKey: 'room_id' });
-    this.belongsTo(models.User, { foreignKey: 'manager_id', as: 'Manager' });
-    this.belongsTo(models.User, { foreignKey: 'user_id', as: 'User' });
+    this.belongsTo(models.FestRoom, { foreignKey: 'roomId' });
+    this.belongsTo(models.User, { foreignKey: 'managerId', as: 'Manager' });
+    this.belongsTo(models.User, { foreignKey: 'userId', as: 'User' });
   }
 }
 
@@ -46,21 +46,24 @@ FestPlacement.init(
       primaryKey: true,
       autoIncrement: true
     },
-    room_id: {
+    roomId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      field: 'roomId'
     },
     slot: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    manager_id: {
+    managerId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      field: 'managerId'
     },
-    user_id: {
+    userId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      field: 'userId'
     },
     type: {
       type: DataTypes.TEXT,

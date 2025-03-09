@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../server/database.sqlite');
+
+// Путь к файлу базы данных SQLite (такой же, как в основном приложении)
+const dbPath = process.env.DATABASE_PATH || 'server/database.sqlite';
 
 console.log('Database path:', dbPath);
 console.log('Current directory:', process.cwd());

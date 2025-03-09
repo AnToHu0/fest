@@ -27,7 +27,7 @@ export class FestRoom extends Model<FestRoomAttributes, FestRoomCreationAttribut
 
   
   static associate(models: Models) {
-    this.hasMany(models.FestPlacement, { foreignKey: 'room_id', as: 'Placements' });
+    this.hasMany(models.FestPlacement, { foreignKey: 'roomId', as: 'Placements' });
   }
 }
 

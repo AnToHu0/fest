@@ -6,6 +6,7 @@ import FestivalRegistrationForm from '~/components/user/FestivalRegistrationForm
 import FestivalRegistrationSuccess from '~/components/user/FestivalRegistrationSuccess.vue';
 import FestivalViewModal from '~/components/user/FestivalViewModal.vue';
 import Loader from '~/components/ui/Loader.vue';
+import Modal from '~/components/ui/Modal.vue';
 
 definePageMeta({
   middleware: "auth",
@@ -175,29 +176,44 @@ const handleCloseViewModal = () => {
     </div>
     
     <!-- Форма регистрации на фестиваль -->
-    <FestivalRegistrationForm 
-      v-if="currentFestival"
-      :festival="currentFestival"
-      :is-open="showRegistrationForm"
+    <Modal
+      v-if="showRegistrationForm && currentFestival"
+      :title="`Регистрация на фестиваль ${currentFestival.year}`"
       @close="handleCloseRegistrationForm"
-      @submit="handleSubmitRegistration"
-    />
+      size="xl"
+    >
+      <FestivalRegistrationForm 
+        :festival="currentFestival"
+        @close="handleCloseRegistrationForm"
+        @submit="handleSubmitRegistration"
+      />
+    </Modal>
     
     <!-- Окно успешной регистрации -->
-    <FestivalRegistrationSuccess 
-      v-if="currentFestival"
-      :festival="currentFestival"
-      :departments="selectedDepartments"
-      :is-open="showSuccessModal"
+    <Modal
+      v-if="showSuccessModal && currentFestival"
+      title="Регистрация успешно завершена!"
       @close="handleCloseSuccessModal"
-    />
+      size="lg"
+    >
+      <FestivalRegistrationSuccess 
+        :festival="currentFestival"
+        :departments="selectedDepartments"
+        @close="handleCloseSuccessModal"
+      />
+    </Modal>
     
     <!-- Окно просмотра информации о фестивале -->
-    <FestivalViewModal
-      v-if="currentFestival"
-      :festival="currentFestival"
-      :is-open="showViewModal"
+    <Modal
+      v-if="showViewModal && currentFestival"
+      :title="`Фестиваль ${currentFestival.year}`"
       @close="handleCloseViewModal"
-    />
+      size="xl"
+    >
+      <FestivalViewModal
+        :festival="currentFestival"
+        @close="handleCloseViewModal"
+      />
+    </Modal>
   </div>
 </template> 

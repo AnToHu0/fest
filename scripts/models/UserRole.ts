@@ -1,34 +1,42 @@
 import { Model, DataTypes } from 'sequelize';
 import sequelize from './database';
-import { User } from './User';
-import { Role } from './Role';
+import User from './User';
+import Role from './Role';
 
 export class UserRole extends Model {
+  declare id: number;
   declare userId: number;
   declare roleId: number;
-  declare createdAt: Date;
-  declare updatedAt: Date;
+  declare createdAt?: Date;
+  declare updatedAt?: Date;
 }
 
 UserRole.init(
   {
-    userId: {
+    id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
+      autoIncrement: true
+    },
+    userId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'fest_users',
+        model: User,
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     roleId: {
       type: DataTypes.INTEGER,
-      primaryKey: true,
       allowNull: false,
       references: {
-        model: 'fest_roles',
+        model: Role,
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     createdAt: {
       type: DataTypes.DATE
@@ -45,30 +53,23 @@ UserRole.init(
       {
         fields: ['userId', 'roleId'],
         unique: false,
-        name: 'user_role_composite'
+        name: 'userRoleIdx'
       }
     ]
   }
 );
 
-User.belongsToMany(Role, {
-  through: {
-    model: UserRole,
-    unique: false
-  },
+// Определяем связи
+User.belongsToMany(Role, { 
+  through: UserRole,
   foreignKey: 'userId',
-  otherKey: 'roleId',
-  as: 'roles'
+  otherKey: 'roleId'
 });
 
-Role.belongsToMany(User, {
-  through: {
-    model: UserRole,
-    unique: false
-  },
+Role.belongsToMany(User, { 
+  through: UserRole,
   foreignKey: 'roleId',
-  otherKey: 'userId',
-  as: 'users'
+  otherKey: 'userId'
 });
 
 export default UserRole; 

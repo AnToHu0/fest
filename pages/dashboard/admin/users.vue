@@ -44,8 +44,8 @@ const fetchUsers = async () => {
         page: pagination.value.page,
         limit: pagination.value.limit,
         search: searchQuery.value,
-        sortField: sortField.value,
-        sortOrder: sortOrder.value
+        sort: sortField.value,
+        order: sortOrder.value
       }
     });
     

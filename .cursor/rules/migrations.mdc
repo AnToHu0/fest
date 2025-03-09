@@ -1,0 +1,82 @@
+---
+description: rule-for-migrations
+globs: 
+alwaysApply: false
+---
+
+migrations-guide: When you need to modify the database schema, follow these steps:
+
+1. File Structure:
+   - All migrations should be in `server/migrations/` directory
+   - Use `.cjs` extension for migration files (due to ESM in the project)
+   - Use timestamp prefix for migration files (YYYYMMDDHHMMSS)
+
+2. Creating a Migration:
+   ```bash
+   pnpm sequelize-cli migration:generate --name your-migration-name
+   ```
+   This will create a file like: `YYYYMMDDHHMMSS-your-migration-name.cjs`
+
+3. Migration File Structure:
+   ```js
+   'use strict';
+   
+   /** @type {import('sequelize-cli').Migration} */
+   module.exports = {
+     async up(queryInterface, Sequelize) {
+       // Your migration code here
+     },
+     
+     async down(queryInterface, Sequelize) {
+       // Your rollback code here
+     }
+   };
+   ```
+
+4. Running Migrations:
+   ```bash
+   pnpm sequelize-cli db:migrate
+   ```
+
+5. Configuration Files:
+   - `.sequelizerc` - points to config and migration paths
+   - `server/config/database.cjs` - database configuration for different environments
+
+6. Common Migration Operations:
+   ```js
+   // Add column
+   queryInterface.addColumn('table_name', 'column_name', {
+     type: Sequelize.DATA_TYPE,
+     allowNull: true/false,
+     references: {  // for foreign keys
+       model: 'referenced_table',
+       key: 'referenced_column'
+     },
+     onUpdate: 'CASCADE',
+     onDelete: 'SET NULL'
+   });
+
+   // Remove column
+   queryInterface.removeColumn('table_name', 'column_name');
+
+   // Create table
+   queryInterface.createTable('table_name', {
+     id: {
+       type: Sequelize.INTEGER,
+       primaryKey: true,
+       autoIncrement: true
+     },
+     // other columns
+   });
+
+   // Drop table
+   queryInterface.dropTable('table_name');
+   ```
+
+7. Best Practices:
+   - Always include both `up` and `down` migrations
+   - Test migrations in development before applying to production
+   - Keep migrations small and focused
+   - Use meaningful names for migration files
+   - Include foreign key constraints where needed
+   - Handle data migrations carefully

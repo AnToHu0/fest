@@ -36,7 +36,7 @@ FestDepartmentAdmin.init(
     departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'department_id',
+      field: 'departmentId',
       references: {
         model: 'fest_departments',
         key: 'id'
@@ -47,7 +47,7 @@ FestDepartmentAdmin.init(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'user_id',
+      field: 'userId',
       references: {
         model: 'fest_users',
         key: 'id'
@@ -63,7 +63,7 @@ FestDepartmentAdmin.init(
     indexes: [
       {
         unique: false,
-        fields: ['department_id', 'user_id'],
+        fields: ['departmentId', 'userId'],
         name: 'fest_department_admins_index'
       }
     ]
