@@ -1,4 +1,4 @@
-import Role from '../models/Role';
+import { Role } from '../models/Role';
 
 export async function initRoles() {
   const roles = [
@@ -9,10 +9,6 @@ export async function initRoles() {
     {
       name: 'admin',
       description: 'Администратор системы'
-    },
-    {
-      name: 'department_head',
-      description: 'Начальник департамента'
     },
     {
       name: 'accommodation_manager',

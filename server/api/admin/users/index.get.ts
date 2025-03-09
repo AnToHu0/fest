@@ -3,6 +3,7 @@ import { getServerSession } from '#auth';
 import { Op, WhereOptions } from 'sequelize';
 import sequelize from '~/server/database';
 import type { UserAttributes } from '~/server/models/User';
+import { Role } from '~/server/models/Role';
 
 export default defineEventHandler(async (event) => {
   // Проверяем авторизацию
@@ -68,7 +69,15 @@ export default defineEventHandler(async (event) => {
       limit,
       offset,
       order: [[finalSortField, sortOrder]],
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] },
+      include: [
+        {
+          model: Role,
+          as: 'Roles',
+          attributes: ['name'],
+          through: { attributes: [] }
+        }
+      ]
     });
 
     // Получаем количество детей для каждого пользователя
@@ -77,9 +86,11 @@ export default defineEventHandler(async (event) => {
         const childrenCount = await User.count({
           where: { parentId: user.id }
         });
+        const userData = user.toJSON();
         return {
-          ...user.toJSON(),
-          childrenCount
+          ...userData,
+          childrenCount,
+          roles: userData.Roles?.map(role => role.name) || []
         };
       })
     );

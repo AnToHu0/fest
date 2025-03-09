@@ -51,6 +51,8 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare Roles?: Role[];
   declare Departments?: FestDepartment[];
 
+  // Добавляем метод setRoles
+  declare setRoles: (roles: Role[], options?: any) => Promise<void>;
 
   async verifyPassword(password: string): Promise<boolean> {
     try {
