@@ -4,6 +4,7 @@ import User from './User';
 import Role from './Role';
 
 export class UserRole extends Model {
+  declare id: number;
   declare userId: number;
   declare roleId: number;
   declare createdAt?: Date;
@@ -12,13 +13,20 @@ export class UserRole extends Model {
 
 UserRole.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: User,
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     roleId: {
       type: DataTypes.INTEGER,
@@ -26,7 +34,9 @@ UserRole.init(
       references: {
         model: Role,
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     createdAt: {
       type: DataTypes.DATE
@@ -43,7 +53,7 @@ UserRole.init(
       {
         fields: ['userId', 'roleId'],
         unique: false,
-        name: 'user_role_composite'
+        name: 'user_role_idx'
       }
     ]
   }
@@ -51,19 +61,15 @@ UserRole.init(
 
 // Определяем связи
 User.belongsToMany(Role, { 
-  through: {
-    model: UserRole,
-    unique: false
-  },
-  foreignKey: 'userId'
+  through: UserRole,
+  foreignKey: 'userId',
+  otherKey: 'roleId'
 });
 
 Role.belongsToMany(User, { 
-  through: {
-    model: UserRole,
-    unique: false
-  },
-  foreignKey: 'roleId'
+  through: UserRole,
+  foreignKey: 'roleId',
+  otherKey: 'userId'
 });
 
 export default UserRole; 

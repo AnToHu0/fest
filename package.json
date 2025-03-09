@@ -10,7 +10,9 @@
     "preview": "nuxt preview --port ${PORT:-3000}",
     "postinstall": "nuxt prepare",
     "seed:test": "cross-env NODE_ENV=development tsx scripts/seed-test-users.ts",
-    "cleanup:test": "cross-env NODE_ENV=development tsx scripts/cleanup-test-users.ts"
+    "cleanup:test": "cross-env NODE_ENV=development tsx scripts/cleanup-test-users.ts",
+    "migrate:departments": "cross-env NODE_ENV=development tsx server/scripts/migrateDepartments.ts",
+    "migrate:rooms": "cross-env NODE_ENV=development tsx server/scripts/migrateRooms.ts"
   },
   "devDependencies": {
     "@iconify-json/mdi": "^1.2.3",

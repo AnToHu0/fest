@@ -5,8 +5,8 @@ import type { Models } from './index';
 
 export interface FestDepartmentAdminAttributes {
   id: number;
-  department_id: number;
-  user_id: number;
+  departmentId: number;
+  userId: number;
 }
 
 
@@ -15,13 +15,13 @@ export interface FestDepartmentAdminCreationAttributes extends Optional<FestDepa
 
 export class FestDepartmentAdmin extends Model<FestDepartmentAdminAttributes, FestDepartmentAdminCreationAttributes> implements FestDepartmentAdminAttributes {
   declare id: number;
-  declare department_id: number;
-  declare user_id: number;
+  declare departmentId: number;
+  declare userId: number;
 
   
   static associate(models: Models) {
-    this.belongsTo(models.FestDepartment, { foreignKey: 'department_id', as: 'Department' });
-    this.belongsTo(models.User, { foreignKey: 'user_id', as: 'User' });
+    this.belongsTo(models.FestDepartment, { foreignKey: 'departmentId', as: 'Department' });
+    this.belongsTo(models.User, { foreignKey: 'userId', as: 'User' });
   }
 }
 
@@ -33,9 +33,10 @@ FestDepartmentAdmin.init(
       primaryKey: true,
       autoIncrement: true
     },
-    department_id: {
+    departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      field: 'department_id',
       references: {
         model: 'fest_departments',
         key: 'id'
@@ -43,9 +44,10 @@ FestDepartmentAdmin.init(
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    user_id: {
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      field: 'user_id',
       references: {
         model: 'fest_users',
         key: 'id'
@@ -60,8 +62,9 @@ FestDepartmentAdmin.init(
     timestamps: false,
     indexes: [
       {
-        unique: true,
-        fields: ['department_id', 'user_id']
+        unique: false,
+        fields: ['department_id', 'user_id'],
+        name: 'fest_department_admins_index'
       }
     ]
   }

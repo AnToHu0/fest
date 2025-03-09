@@ -60,9 +60,9 @@ FestFestivalDepartment.init(
     timestamps: false,
     indexes: [
       {
-        unique: true,
+        unique: false,
         fields: ['festival_id', 'department_id'],
-        name: 'fest_festival_departments_unique'
+        name: 'fest_festival_departments_index'
       }
     ]
   }

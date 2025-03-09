@@ -8,6 +8,9 @@ import { UserRole } from './UserRole';
 import { FestDepartmentAdmin } from './FestDepartmentAdmin';
 import { Festival } from './Festival';
 import { FestFestivalDepartment } from './FestFestivalDepartment';
+import { FestRegistration } from './FestRegistration';
+import { FestRegistrationChild } from './FestRegistrationChild';
+import { FestRegistrationDepartment } from './FestRegistrationDepartment';
 
 
 export interface Models {
@@ -21,6 +24,9 @@ export interface Models {
   FestDepartmentAdmin: typeof FestDepartmentAdmin;
   Festival: typeof Festival;
   FestFestivalDepartment: typeof FestFestivalDepartment;
+  FestRegistration: typeof FestRegistration;
+  FestRegistrationChild: typeof FestRegistrationChild;
+  FestRegistrationDepartment: typeof FestRegistrationDepartment;
   [key: string]: any;
 }
 
@@ -35,7 +41,10 @@ const models: Models = {
   UserRole,
   FestDepartmentAdmin,
   Festival,
-  FestFestivalDepartment
+  FestFestivalDepartment,
+  FestRegistration,
+  FestRegistrationChild,
+  FestRegistrationDepartment
 };
 
 
