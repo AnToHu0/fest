@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted, onBeforeUnmount, watch } from 'vue';
+
 interface Props {
   isOpen: boolean;
   title: string;
@@ -6,23 +8,63 @@ interface Props {
   confirmText?: string;
   cancelText?: string;
   confirmButtonClass?: string;
+  zIndex?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   confirmText: 'Подтвердить',
   cancelText: 'Отмена',
-  confirmButtonClass: 'bg-red-600 hover:bg-red-700'
+  confirmButtonClass: 'bg-red-600 hover:bg-red-700',
+  zIndex: 50
 });
 
 const emit = defineEmits(['confirm', 'cancel']);
 
-const handleConfirm = () => {
+const handleConfirm = (event: Event) => {
+  event.stopPropagation();
   emit('confirm');
 };
 
-const handleCancel = () => {
+const handleCancel = (event: Event) => {
+  event.stopPropagation();
   emit('cancel');
 };
+
+// Предотвращаем всплытие события клика
+const stopPropagation = (event: Event) => {
+  event.stopPropagation();
+};
+
+// Функция для проверки наличия открытых модальных окон
+const checkOpenModals = (): boolean => {
+  return document.querySelectorAll('.fixed.inset-0.overflow-y-auto').length > 0;
+};
+
+// Восстановление прокрутки страницы при закрытии модального окна
+const enableBodyScroll = () => {
+  if (!checkOpenModals()) {
+    document.body.style.overflow = '';
+  }
+};
+
+// Наблюдаем за изменением свойства isOpen
+watch(() => props.isOpen, (newValue) => {
+  if (!newValue) {
+    // Когда модальное окно закрывается, проверяем, нужно ли восстановить прокрутку
+    setTimeout(() => {
+      enableBodyScroll();
+    }, 100);
+  }
+});
+
+// При размонтировании компонента восстанавливаем прокрутку, если нет других модальных окон
+onBeforeUnmount(() => {
+  if (props.isOpen) {
+    setTimeout(() => {
+      enableBodyScroll();
+    }, 100);
+  }
+});
 </script>
 
 <template>
@@ -37,21 +79,24 @@ const handleCancel = () => {
     >
       <div
         v-if="isOpen"
-        class="fixed inset-0 z-50 overflow-y-auto"
+        :style="{ zIndex: zIndex }"
+        class="fixed inset-0 overflow-y-auto"
         aria-labelledby="modal-title"
         role="dialog"
         aria-modal="true"
+        @click.stop="stopPropagation"
       >
         <!-- Затемнение фона -->
         <div
           class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          @click="handleCancel"
+          @click.stop="handleCancel"
         />
 
         <!-- Модальное окно -->
-        <div class="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
+        <div class="flex min-h-screen items-center justify-center p-4 text-center sm:p-0" @click.stop="stopPropagation">
           <div
             class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg"
+            @click.stop="stopPropagation"
           >
             <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
               <div class="sm:flex sm:items-start">
@@ -82,14 +127,14 @@ const handleCancel = () => {
                   confirmButtonClass,
                   'inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm sm:ml-3 sm:w-auto'
                 ]"
-                @click="handleConfirm"
+                @click.stop="handleConfirm"
               >
                 {{ confirmText }}
               </button>
               <button
                 type="button"
                 class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                @click="handleCancel"
+                @click.stop="handleCancel"
               >
                 {{ cancelText }}
               </button>

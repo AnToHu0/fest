@@ -7,7 +7,6 @@ export interface FestDepartmentAdminAttributes {
   id: number;
   department_id: number;
   user_id: number;
-  is_main: boolean;
 }
 
 
@@ -18,7 +17,6 @@ export class FestDepartmentAdmin extends Model<FestDepartmentAdminAttributes, Fe
   declare id: number;
   declare department_id: number;
   declare user_id: number;
-  declare is_main: boolean;
 
   
   static associate(models: Models) {
@@ -54,11 +52,6 @@ FestDepartmentAdmin.init(
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
-    },
-    is_main: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false
     }
   },
   {

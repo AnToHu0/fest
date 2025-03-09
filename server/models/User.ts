@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import sequelize from '~/server/database';
 import { Role } from './Role';
 import type { FestDepartment } from './FestDepartment';
+import type { Models } from './index';
 
 
 export interface UserAttributes {
@@ -61,6 +62,15 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   static async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
     return await bcrypt.hash(password, saltRounds);
+  }
+
+  static associate(models: Models) {
+    this.belongsToMany(models.FestDepartment, {
+      through: 'fest_department_admins',
+      foreignKey: 'user_id',
+      otherKey: 'department_id',
+      as: 'Departments'
+    });
   }
 }
 
@@ -178,12 +188,6 @@ User.hasMany(User, {
 });
 User.belongsTo(User, { as: 'parent', foreignKey: 'parentId' });
 
-// Добавляем связь многие ко многим с департаментами
-User.belongsToMany(sequelize.models.FestDepartment || {}, {
-  through: 'fest_department_admins',
-  foreignKey: 'user_id',
-  otherKey: 'department_id',
-  as: 'Departments'
-});
+// Связь многие ко многим с департаментами будет установлена в методе associate
 
 export default User; 
