@@ -89,16 +89,23 @@ const menuItems = computed((): MenuItem[] => {
         type: 'link'
       },
       {
-        path: '/dashboard/admin/departments',
-        label: 'Департаменты',
-        icon: 'mdi:domain',
+        path: '/dashboard/admin/accommodation',
+        label: 'Размещение',
+        icon: 'mdi:bed',
         roles: ['admin'],
         type: 'link'
       },
       {
-        path: '/dashboard/admin/accommodation',
-        label: 'Размещение',
-        icon: 'mdi:bed',
+        path: '/dashboard/admin/rooms',
+        label: 'Управление жильём',
+        icon: 'mdi:home-city',
+        roles: ['admin'],
+        type: 'link'
+      },
+      {
+        path: '/dashboard/admin/departments',
+        label: 'Департаменты',
+        icon: 'mdi:domain',
         roles: ['admin'],
         type: 'link'
       }

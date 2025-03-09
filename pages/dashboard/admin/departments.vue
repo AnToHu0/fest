@@ -371,18 +371,18 @@ onMounted(() => {
       <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Название</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Начальники департамента</th>
-            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+            <th class="px-6 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Название</th>
+            <th class="px-6 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+            <th class="px-6 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Начальники департамента</th>
+            <th class="px-6 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
           <tr v-for="department in departments" :key="department.id" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-6 py-2 whitespace-nowrap">
               <div class="text-sm font-medium text-gray-900">{{ department.title }}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-6 py-2 whitespace-nowrap">
               <span v-if="department.isPublic" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 Публичный
               </span>
@@ -390,7 +390,7 @@ onMounted(() => {
                 Скрытый
               </span>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-6 py-2">
               <div class="flex items-center gap-2">
                 <div v-if="department.Admins && department.Admins.length > 0" class="flex flex-wrap items-center">
                   <template v-for="(admin, index) in department.Admins" :key="admin.id">
@@ -409,7 +409,7 @@ onMounted(() => {
                 </button>
               </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <td class="px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
               <div class="flex justify-end gap-2">
                 <button 
                   class="text-blue-600 hover:text-blue-900 p-1"
@@ -549,7 +549,7 @@ onMounted(() => {
             <div 
               v-for="user in searchResults" 
               :key="user.id" 
-              class="p-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center border-b last:border-b-0"
+              class="p-1 hover:bg-gray-50 cursor-pointer flex justify-between items-center border-b last:border-b-0"
               @click="addAdmin(user.id)"
             >
               <div>
