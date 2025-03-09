@@ -15,11 +15,13 @@ export interface Festival {
   updatedAt?: string;
   departments?: FestivalDepartment[];
   Departments?: FestivalDepartment[];
+  isRegistered?: boolean;
 }
 
 export interface FestivalDepartment {
   id: number;
   title: string;
+  joinText?: string;
 }
 
 export interface FestivalFormData {

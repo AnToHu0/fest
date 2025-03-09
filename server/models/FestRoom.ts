@@ -1,4 +1,5 @@
-import { Model, DataTypes, Optional } from 'sequelize';
+import { Sequelize, Model, DataTypes } from 'sequelize';
+import type { Optional } from 'sequelize';
 import sequelize from '~/server/database';
 import type { Models } from './index';
 

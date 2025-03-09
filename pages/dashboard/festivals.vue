@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import type { Festival } from '~/types/festival';
+import type { Festival, FestivalDepartment } from '~/types/festival';
+import type { FestivalRegistrationFormData } from '~/types/registration';
 import FestivalCard from '~/components/user/FestivalCard.vue';
+import FestivalRegistrationForm from '~/components/user/FestivalRegistrationForm.vue';
+import FestivalRegistrationSuccess from '~/components/user/FestivalRegistrationSuccess.vue';
+import FestivalViewModal from '~/components/user/FestivalViewModal.vue';
 import Loader from '~/components/ui/Loader.vue';
 
 definePageMeta({
@@ -26,6 +30,13 @@ const festivals = ref<Festival[]>([]);
 const activeFestivals = computed(() => festivals.value.filter(f => f.isActive));
 const pastFestivals = computed(() => festivals.value.filter(f => !f.isActive));
 
+// Состояние модальных окон
+const showRegistrationForm = ref(false);
+const showSuccessModal = ref(false);
+const showViewModal = ref(false);
+const currentFestival = ref<Festival | null>(null);
+const selectedDepartments = ref<FestivalDepartment[]>([]);
+
 // Загрузка данных фестивалей
 const { data: festivalsData, pending: festivalsLoading } = await useFetch('/api/festivals', {
   key: 'user-festivals-data',
@@ -45,15 +56,74 @@ watch(festivalsLoading, (loading) => {
   isLoading.value = loading;
 }, { immediate: true });
 
-// Обработчики событий
+// Обработчик нажатия на кнопку "Участвовать"
 const handleParticipate = (id: number) => {
-  // Функционал будет реализован позже
-  alert(`Функционал участия в фестивале ${id} будет реализован позже`);
+  const festival = festivals.value.find(f => f.id === id);
+  if (festival) {
+    console.log('Selected festival for registration:', festival);
+    console.log('Festival departments:', festival.Departments || festival.departments);
+    currentFestival.value = festival;
+    showRegistrationForm.value = true;
+  }
 };
 
+// Обработчик нажатия на кнопку "Посмотреть"
 const handleView = (id: number) => {
-  // Функционал будет реализован позже
-  alert(`Функционал просмотра фестиваля ${id} будет реализован позже`);
+  const festival = festivals.value.find(f => f.id === id);
+  if (festival) {
+    currentFestival.value = festival;
+    showViewModal.value = true;
+  }
+};
+
+// Обработчик закрытия формы регистрации
+const handleCloseRegistrationForm = () => {
+  showRegistrationForm.value = false;
+  currentFestival.value = null;
+};
+
+// Обработчик отправки формы регистрации
+const handleSubmitRegistration = async (formData: FestivalRegistrationFormData) => {
+  isLoading.value = true;
+  try {
+    const response = await $fetch('/api/festivals/register', {
+      method: 'POST',
+      body: {
+        ...formData,
+        festivalId: currentFestival.value?.id
+      }
+    });
+    
+    if (response.success) {
+      // Сохраняем информацию о выбранных департаментах для отображения в окне успешной регистрации
+      selectedDepartments.value = response.departments || [];
+      
+      // Закрываем форму регистрации и показываем окно успешной регистрации
+      showRegistrationForm.value = false;
+      showSuccessModal.value = true;
+      
+      // Обновляем список фестивалей, чтобы отразить регистрацию
+      refreshNuxtData('user-festivals-data');
+    }
+  } catch (error: any) {
+    console.error('Ошибка при регистрации на фестиваль:', error);
+    alert(error.data?.message || 'Произошла ошибка при регистрации на фестиваль');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Обработчик закрытия окна успешной регистрации
+const handleCloseSuccessModal = () => {
+  showSuccessModal.value = false;
+  currentFestival.value = null;
+  selectedDepartments.value = [];
+};
+
+// Обработчик закрытия окна просмотра фестиваля
+const handleCloseViewModal = () => {
+  showViewModal.value = false;
+  currentFestival.value = null;
 };
 </script>
 
@@ -103,5 +173,31 @@ const handleView = (id: number) => {
         </div>
       </div>
     </div>
+    
+    <!-- Форма регистрации на фестиваль -->
+    <FestivalRegistrationForm 
+      v-if="currentFestival"
+      :festival="currentFestival"
+      :is-open="showRegistrationForm"
+      @close="handleCloseRegistrationForm"
+      @submit="handleSubmitRegistration"
+    />
+    
+    <!-- Окно успешной регистрации -->
+    <FestivalRegistrationSuccess 
+      v-if="currentFestival"
+      :festival="currentFestival"
+      :departments="selectedDepartments"
+      :is-open="showSuccessModal"
+      @close="handleCloseSuccessModal"
+    />
+    
+    <!-- Окно просмотра информации о фестивале -->
+    <FestivalViewModal
+      v-if="currentFestival"
+      :festival="currentFestival"
+      :is-open="showViewModal"
+      @close="handleCloseViewModal"
+    />
   </div>
 </template> 

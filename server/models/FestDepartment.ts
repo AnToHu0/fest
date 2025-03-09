@@ -1,4 +1,5 @@
-import { Model, DataTypes, Optional } from 'sequelize';
+import { Sequelize, Model, DataTypes } from 'sequelize';
+import type { Optional } from 'sequelize';
 import sequelize from '~/server/database';
 import type { Models } from './index';
 
@@ -23,14 +24,20 @@ export class FestDepartment extends Model<FestDepartmentAttributes, FestDepartme
   
   static associate(models: Models) {
     this.belongsToMany(models.User, { 
-      through: 'fest_department_admins',
+      through: {
+        model: models.FestDepartmentAdmin,
+        unique: false
+      },
       foreignKey: 'department_id',
       otherKey: 'user_id',
       as: 'Admins'
     });
     
     this.belongsToMany(models.Festival, { 
-      through: 'fest_festival_departments',
+      through: {
+        model: models.FestFestivalDepartment,
+        unique: false
+      },
       foreignKey: 'department_id',
       otherKey: 'festival_id',
       as: 'Festivals'

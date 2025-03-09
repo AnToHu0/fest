@@ -1,5 +1,6 @@
 import { Festival } from '~/server/models/Festival';
 import { FestDepartment } from '~/server/models/FestDepartment';
+import { FestRegistration } from '~/server/models/FestRegistration';
 import { defineEventHandler, createError } from 'h3';
 import { getServerSession } from '#auth';
 
@@ -29,15 +30,30 @@ export default defineEventHandler(async (event) => {
           model: FestDepartment,
           as: 'Departments',
           through: { attributes: [] },
-          attributes: ['id', 'title']
+          attributes: ['id', 'title', 'joinText']
         }
       ],
       order: [['year', 'DESC'], ['startDate', 'DESC']]
     });
     
-    // Преобразуем данные в формат, понятный клиенту
+    // Получаем регистрации пользователя на фестивали
+    const userRegistrations = await FestRegistration.findAll({
+      where: {
+        userId: session.user.id
+      },
+      attributes: ['festivalId']
+    });
+    
+    // Создаем множество ID фестивалей, на которые зарегистрирован пользователь
+    const registeredFestivalIds = new Set(userRegistrations.map(reg => reg.festivalId));
+    
+    // Преобразуем данные в формат, понятный клиенту, и добавляем информацию о регистрации
     const formattedFestivals = festivals.map(festival => {
-      return festival.get({ plain: true });
+      const festivalData = festival.get({ plain: true });
+      return {
+        ...festivalData,
+        isRegistered: registeredFestivalIds.has(festival.id)
+      };
     });
     
     return {

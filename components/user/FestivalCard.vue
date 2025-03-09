@@ -20,6 +20,9 @@ const isPast = computed(() => {
   return endDate < new Date();
 });
 
+// Проверка, зарегистрирован ли пользователь на фестиваль
+const isRegistered = computed(() => props.festival.isRegistered);
+
 // Форматирование даты
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -46,7 +49,7 @@ const handleView = () => {
     <div v-if="isActive" class="h-48 bg-purple-50 relative flex items-center justify-center">
       <img src="/img/logo.png" alt="Крымский Вайшнавский Фестиваль" class="h-32 object-contain">
       <div class="absolute top-0 left-0 bg-green-500 text-white px-3 py-1 rounded-br-lg text-sm font-medium">
-        Регистрация открыта
+        {{ isRegistered ? 'Вы зарегистрированы' : 'Регистрация открыта' }}
       </div>
     </div>
     
@@ -69,16 +72,18 @@ const handleView = () => {
       
       <div class="flex space-x-3 mt-4">
         <button 
+          v-if="!isRegistered"
           @click="handleParticipate"
-          class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           :disabled="isPast"
           :class="{ 'opacity-50 cursor-not-allowed': isPast }"
         >
           Участвовать
         </button>
         <button 
+          v-if="isRegistered || isPast"
           @click="handleView"
-          class="flex-1 px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
+          class="w-full px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
         >
           Посмотреть
         </button>

@@ -39,7 +39,10 @@ export class Festival extends Model<FestivalAttributes, FestivalCreationAttribut
   
   static associate(models: Models) {
     this.belongsToMany(models.FestDepartment, { 
-      through: 'fest_festival_departments',
+      through: {
+        model: models.FestFestivalDepartment,
+        unique: false
+      },
       foreignKey: 'festival_id',
       otherKey: 'department_id',
       as: 'Departments'

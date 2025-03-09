@@ -23,14 +23,13 @@ export interface UserAttributes {
   updatedAt?: Date;
   parentId: number | null;
   Roles?: Role[];
-  children?: UserAttributes[];
   Departments?: FestDepartment[];
 }
 
 
 export interface UserCreationAttributes extends Optional<UserAttributes,
   'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt' |
-  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles' | 'children' | 'searchField' | 'adminNotes' | 'Departments'> { }
+  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles' | 'searchField' | 'adminNotes' | 'Departments'> { }
 
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -50,26 +49,61 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare updatedAt?: Date;
   declare parentId: number | null;
   declare Roles?: Role[];
-  declare children?: UserAttributes[];
   declare Departments?: FestDepartment[];
 
 
   async verifyPassword(password: string): Promise<boolean> {
-    return await bcrypt.compare(password, this.password);
+    try {
+      return await bcrypt.compare(password, this.password);
+    } catch (error) {
+      console.error('Ошибка при проверке пароля:', error);
+      return false;
+    }
   }
 
 
   static async hashPassword(password: string): Promise<string> {
-    const saltRounds = 10;
-    return await bcrypt.hash(password, saltRounds);
+    try {
+      const saltRounds = 10;
+      return await bcrypt.hash(password, saltRounds);
+    } catch (error) {
+      console.error('Ошибка при хешировании пароля:', error);
+      throw error;
+    }
   }
 
   static associate(models: Models) {
     this.belongsToMany(models.FestDepartment, {
-      through: 'fest_department_admins',
+      through: {
+        model: models.FestDepartmentAdmin,
+        unique: false
+      },
       foreignKey: 'user_id',
       otherKey: 'department_id',
       as: 'Departments'
+    });
+
+    // Связь с регистрациями на фестивали (как ребенок)
+    this.belongsToMany(models.FestRegistration, {
+      through: {
+        model: models.FestRegistrationChild,
+        unique: false
+      },
+      foreignKey: 'childId',
+      otherKey: 'registrationId',
+      as: 'Registrations'
+    });
+
+    // Связь родитель-ребенок через parentId
+    this.belongsTo(models.User, {
+      foreignKey: 'parentId',
+      as: 'parent'
+    });
+
+    // Связь с детьми
+    this.hasMany(models.User, {
+      foreignKey: 'parentId',
+      as: 'children'
     });
   }
 }
@@ -129,7 +163,9 @@ User.init(
       references: {
         model: 'fest_users',
         key: 'id'
-      }
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     },
     searchField: {
       type: DataTypes.STRING,
@@ -154,40 +190,39 @@ User.init(
     timestamps: true,
     hooks: {
       beforeCreate: async (user: User) => {
-        if (user.password) {
-          user.password = await User.hashPassword(user.password);
-        }
-        user.searchField = [
-          user.fullName,
-          user.spiritualName,
-          user.city
-        ].filter(value => value != null && value !== '').join(' ').toLowerCase();
-      },
-      beforeUpdate: async (user: User) => {
-        if (user.changed('password')) {
-          user.password = await User.hashPassword(user.password);
-        }
-        if (user.changed('fullName') || user.changed('spiritualName') || user.changed('city')) {
+        try {
+          if (user.password) {
+            user.password = await User.hashPassword(user.password);
+          }
           user.searchField = [
             user.fullName,
             user.spiritualName,
             user.city
           ].filter(value => value != null && value !== '').join(' ').toLowerCase();
+        } catch (error) {
+          console.error('Ошибка в beforeCreate хуке:', error);
+          throw error;
         }
       },
-    },
+      beforeUpdate: async (user: User) => {
+        try {
+          if (user.changed('password')) {
+            user.password = await User.hashPassword(user.password);
+          }
+          if (user.changed('fullName') || user.changed('spiritualName') || user.changed('city')) {
+            user.searchField = [
+              user.fullName,
+              user.spiritualName,
+              user.city
+            ].filter(value => value != null && value !== '').join(' ').toLowerCase();
+          }
+        } catch (error) {
+          console.error('Ошибка в beforeUpdate хуке:', error);
+          throw error;
+        }
+      }
+    }
   }
 );
-
-// Определяем связь родитель-ребенок
-User.hasMany(User, {
-  as: 'children',
-  foreignKey: 'parentId',
-  onDelete: 'CASCADE',
-  hooks: true
-});
-User.belongsTo(User, { as: 'parent', foreignKey: 'parentId' });
-
-// Связь многие ко многим с департаментами будет установлена в методе associate
 
 export default User; 

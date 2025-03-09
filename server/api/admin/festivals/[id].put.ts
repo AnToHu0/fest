@@ -104,14 +104,17 @@ export default defineEventHandler(async (event) => {
           }
         });
         
-        // Создаем новые связи между фестивалем и департаментами
-        const festivalDepartments = departments.map(department => ({
-          festival_id: festival.id,
-          department_id: department.id
-        }));
-        
-        if (festivalDepartments.length > 0) {
-          await FestFestivalDepartment.bulkCreate(festivalDepartments);
+        // Создаем новые связи между фестивалем и департаментами по одной
+        for (const department of departments) {
+          try {
+            await FestFestivalDepartment.create({
+              festival_id: festival.id,
+              department_id: department.id
+            });
+          } catch (error) {
+            console.warn(`Не удалось создать связь с департаментом ${department.id}:`, error);
+            // Продолжаем с другими департаментами
+          }
         }
       }
     }
