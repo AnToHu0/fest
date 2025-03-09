@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     // Удаляем связи с департаментами
     await FestFestivalDepartment.destroy({
       where: {
-        festival_id: festival.id
+        festivalId: festival.id
       }
     });
 

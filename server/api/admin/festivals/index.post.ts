@@ -81,8 +81,8 @@ export default defineEventHandler(async (event) => {
       
       // Создаем связи между фестивалем и департаментами
       const festivalDepartments = departments.map(department => ({
-        festival_id: festival.id,
-        department_id: department.id
+        festivalId: festival.id,
+        departmentId: department.id
       }));
       
       if (festivalDepartments.length > 0) {

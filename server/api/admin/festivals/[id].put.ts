@@ -91,7 +91,7 @@ export default defineEventHandler(async (event) => {
       // Удаляем существующие связи
       await FestFestivalDepartment.destroy({
         where: {
-          festival_id: festival.id
+          festivalId: festival.id
         }
       });
       
@@ -108,8 +108,8 @@ export default defineEventHandler(async (event) => {
         for (const department of departments) {
           try {
             await FestFestivalDepartment.create({
-              festival_id: festival.id,
-              department_id: department.id
+              festivalId: festival.id,
+              departmentId: department.id
             });
           } catch (error) {
             console.warn(`Не удалось создать связь с департаментом ${department.id}:`, error);

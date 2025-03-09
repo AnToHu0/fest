@@ -69,26 +69,28 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Проверяем, не является ли пользователь уже администратором этого департамента
+    // Проверяем, не является ли пользователь уже администратором
     const existingAdmin = await FestDepartmentAdmin.findOne({
       where: {
-        department_id: departmentId,
-        user_id: userId
+        departmentId: departmentId,
+        userId: userId
       }
     });
 
     if (existingAdmin) {
-      // Если пользователь уже администратор, просто возвращаем существующую запись
-      return existingAdmin;
+      throw createError({
+        statusCode: 400,
+        message: 'Пользователь уже является администратором этого департамента'
+      });
     }
 
-    // Добавляем пользователя как администратора департамента
-    const admin = await FestDepartmentAdmin.create({
-      department_id: departmentId,
-      user_id: userId
+    // Добавляем пользователя как администратора
+    await FestDepartmentAdmin.create({
+      departmentId: departmentId,
+      userId: userId
     });
 
-    return admin;
+    return existingAdmin;
   } catch (error: any) {
     console.error('Ошибка при добавлении администратора департамента:', error);
     throw createError({

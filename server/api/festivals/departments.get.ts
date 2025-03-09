@@ -44,15 +44,15 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Проверяем связи в таблице fest_festival_departments
-    const [results] = await sequelize.query(
-      `SELECT * FROM fest_festival_departments WHERE festival_id = ${festivalId}`
+    // Получаем все департаменты фестиваля
+    const [departments] = await sequelize.query(
+      `SELECT * FROM fest_festival_departments WHERE festivalId = ${festivalId}`
     );
 
     return {
       success: true,
       festival: festival.get({ plain: true }),
-      rawLinks: results
+      rawLinks: departments
     };
   } catch (error: any) {
     console.error('Ошибка при получении департаментов фестиваля:', error);
