@@ -40,7 +40,15 @@ const getUserName = () => {
 // Приветствие в зависимости от времени суток
 const greeting = computed(() => {
   const userName = getUserName();
-  return userName ? `Добрый ${getTimeOfDay()}, ${userName}!` : `Добрый ${getTimeOfDay()}!`;
+  const timeOfDay = getTimeOfDay();
+  const declension = {
+    'утро': 'Доброе',
+    'день': 'Добрый', 
+    'вечер': 'Добрый',
+    'ночь': 'Доброй'
+    
+  };
+  return userName ? `${declension[timeOfDay]} ${timeOfDay}, ${userName}!` : `${declension[timeOfDay]} ${timeOfDay}!`;
 });
 
 // Быстрые ссылки для навигации
