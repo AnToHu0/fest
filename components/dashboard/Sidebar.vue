@@ -61,12 +61,24 @@ const menuItems = computed((): MenuItem[] => {
   }
 
   // Добавляем пункты меню для администратора
-  if (hasRole('admin')) {
+  if (hasRole('admin') || hasRole('registrar')) {
     items.push(
       {
         type: 'divider',
         label: 'Администрирование'
       },
+      {
+        path: '/dashboard/admin/registration',
+        label: 'Регистрация',
+        icon: 'mdi:calendar-plus',
+        roles: ['admin', 'registrar'],
+        type: 'link'
+      }
+    );
+  }
+
+  if (hasRole('admin')) {
+    items.push(
       {
         path: '/dashboard/admin/payments',
         label: 'Платежи',

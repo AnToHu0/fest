@@ -12,12 +12,13 @@ export interface FestRegistrationAttributes {
   freeSeatsInCar: number;
   hasPet: boolean;
   notes: string;
+  registeredBy: number | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface FestRegistrationCreationAttributes extends Optional<FestRegistrationAttributes, 
-  'id' | 'hasCar' | 'freeSeatsInCar' | 'hasPet' | 'notes' | 'createdAt' | 'updatedAt'> { }
+  'id' | 'hasCar' | 'freeSeatsInCar' | 'hasPet' | 'notes' | 'registeredBy' | 'createdAt' | 'updatedAt'> { }
 
 export class FestRegistration extends Model<FestRegistrationAttributes, FestRegistrationCreationAttributes> implements FestRegistrationAttributes {
   declare id: number;
@@ -29,6 +30,7 @@ export class FestRegistration extends Model<FestRegistrationAttributes, FestRegi
   declare freeSeatsInCar: number;
   declare hasPet: boolean;
   declare notes: string;
+  declare registeredBy: number | null;
   declare createdAt?: Date;
   declare updatedAt?: Date;
 
@@ -43,6 +45,12 @@ export class FestRegistration extends Model<FestRegistrationAttributes, FestRegi
     this.belongsTo(models.Festival, {
       foreignKey: 'festivalId',
       as: 'Festival'
+    });
+
+    // Связь с администратором, который зарегистрировал
+    this.belongsTo(models.User, {
+      foreignKey: 'registeredBy',
+      as: 'RegisteredByUser'
     });
 
     // Связь с департаментами через промежуточную таблицу
@@ -101,41 +109,51 @@ FestRegistration.init(
     arrivalDate: {
       type: DataTypes.DATE,
       allowNull: false,
-      field: 'arrival_date'
+      field: 'arrivalDate'
     },
     departureDate: {
       type: DataTypes.DATE,
       allowNull: false,
-      field: 'departure_date'
+      field: 'departureDate'
     },
     hasCar: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
-      field: 'has_car'
+      field: 'hasCar'
     },
     freeSeatsInCar: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
-      field: 'free_seats_in_car'
+      field: 'freeSeatsInCar'
     },
     hasPet: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
-      field: 'has_pet'
+      field: 'hasPet'
     },
     notes: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    registeredBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'registeredBy',
+      references: {
+        model: 'fest_users',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL'
     }
   },
   {
     tableName: 'fest_registrations',
     sequelize,
-    timestamps: true,
-    underscored: true
+    timestamps: true
   }
 );
 

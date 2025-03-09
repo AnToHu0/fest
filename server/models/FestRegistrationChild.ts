@@ -47,7 +47,7 @@ FestRegistrationChild.init(
     registrationId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'registration_id',
+      field: 'registrationId',
       references: {
         model: 'fest_registrations',
         key: 'id'
@@ -58,7 +58,7 @@ FestRegistrationChild.init(
     childId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'child_id',
+      field: 'childId',
       references: {
         model: 'fest_users',
         key: 'id'
@@ -70,18 +70,17 @@ FestRegistrationChild.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
-      field: 'needs_separate_bed'
+      field: 'needsSeparateBed'
     }
   },
   {
     tableName: 'fest_registration_children',
     sequelize,
     timestamps: true,
-    underscored: true,
     indexes: [
       {
         unique: false,
-        fields: ['registration_id', 'child_id'],
+        fields: ['registrationId', 'childId'],
         name: 'fest_registration_children_index'
       }
     ]

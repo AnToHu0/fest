@@ -5,31 +5,31 @@ import type { Models } from './index';
 
 export interface PaymentTransactionAttributes {
   id: number;
-  customer_id: number;
-  admin_id: number;
-  payment_type: string;
-  payment_dest: string;
+  customerId: number;
+  adminId: number;
+  paymentType: string;
+  paymentDest: string;
   amount: number;
   date: Date | null;
 }
 
 
-export interface PaymentTransactionCreationAttributes extends Optional<PaymentTransactionAttributes, 'id' | 'payment_type' | 'payment_dest' | 'date'> { }
+export interface PaymentTransactionCreationAttributes extends Optional<PaymentTransactionAttributes, 'id' | 'paymentType' | 'paymentDest' | 'date'> { }
 
 
 export class PaymentTransaction extends Model<PaymentTransactionAttributes, PaymentTransactionCreationAttributes> implements PaymentTransactionAttributes {
   declare id: number;
-  declare customer_id: number;
-  declare admin_id: number;
-  declare payment_type: string;
-  declare payment_dest: string;
+  declare customerId: number;
+  declare adminId: number;
+  declare paymentType: string;
+  declare paymentDest: string;
   declare amount: number;
   declare date: Date | null;
 
   
   static associate(models: Models) {
-    this.belongsTo(models.User, { foreignKey: 'customer_id', as: 'User' });
-    this.belongsTo(models.User, { foreignKey: 'admin_id', as: 'Registrator' });
+    this.belongsTo(models.User, { foreignKey: 'customerId', as: 'User' });
+    this.belongsTo(models.User, { foreignKey: 'adminId', as: 'Registrator' });
   }
 }
 
@@ -41,23 +41,27 @@ PaymentTransaction.init(
       primaryKey: true,
       autoIncrement: true
     },
-    customer_id: {
+    customerId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      field: 'customerId'
     },
-    admin_id: {
+    adminId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      field: 'adminId'
     },
-    payment_type: {
+    paymentType: {
       type: DataTypes.TEXT,
       allowNull: true,
-      defaultValue: 'Наличные'
+      defaultValue: 'Наличные',
+      field: 'paymentType'
     },
-    payment_dest: {
+    paymentDest: {
       type: DataTypes.TEXT,
       allowNull: true,
-      defaultValue: 'Взнос'
+      defaultValue: 'Взнос',
+      field: 'paymentDest'
     },
     amount: {
       type: DataTypes.INTEGER,

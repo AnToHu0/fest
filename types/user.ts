@@ -11,6 +11,9 @@ export interface User {
   isActive?: boolean;
   childrenCount?: number;
   adminNotes?: string | null;
+  isRegistered?: boolean;
+  parent?: User;
+  children?: User[];
 }
 
 export interface Child extends User {

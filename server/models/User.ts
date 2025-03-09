@@ -80,8 +80,8 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
         model: models.FestDepartmentAdmin,
         unique: false
       },
-      foreignKey: 'user_id',
-      otherKey: 'department_id',
+      foreignKey: 'userId',
+      otherKey: 'departmentId',
       as: 'Departments'
     });
 

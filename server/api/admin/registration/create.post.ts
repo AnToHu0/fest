@@ -1,17 +1,15 @@
-import { defineEventHandler, readBody, createError } from 'h3';
+import { defineEventHandler, createError } from 'h3';
 import { getServerSession } from '#auth';
+import { Festival } from '~/server/models/Festival';
 import { FestRegistration } from '~/server/models/FestRegistration';
 import { FestRegistrationChild } from '~/server/models/FestRegistrationChild';
 import { FestRegistrationDepartment } from '~/server/models/FestRegistrationDepartment';
-import { FestDepartment } from '~/server/models/FestDepartment';
-import { Festival } from '~/server/models/Festival';
 import { User } from '~/server/models/User';
 import sequelize from '~/server/database';
-import type { FestDepartmentAttributes } from '~/server/models/FestDepartment';
 
 interface ChildRegistration {
   id: number;
-  needsSeparateBed: boolean;
+  needsSeparateBed?: boolean;
 }
 
 export default defineEventHandler(async (event) => {
@@ -25,7 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Проверяем роль пользователя
-  if (!session.user.roles?.includes('user')) {
+  if (!session.user.roles?.some(role => ['admin', 'registrar'].includes(role))) {
     throw createError({
       statusCode: 403,
       message: 'Недостаточно прав'
@@ -35,6 +33,7 @@ export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
     const { 
+      userId,
       festivalId, 
       arrivalDate, 
       departureDate, 
@@ -47,10 +46,19 @@ export default defineEventHandler(async (event) => {
     } = body;
 
     // Проверяем обязательные поля
-    if (!festivalId || !arrivalDate || !departureDate) {
+    if (!userId || !festivalId || !arrivalDate || !departureDate) {
       throw createError({
         statusCode: 400,
         message: 'Не указаны обязательные поля'
+      });
+    }
+
+    // Проверяем существование пользователя
+    const user = await User.findByPk(userId);
+    if (!user) {
+      throw createError({
+        statusCode: 404,
+        message: 'Пользователь не найден'
       });
     }
 
@@ -66,7 +74,7 @@ export default defineEventHandler(async (event) => {
     // Проверяем, что пользователь еще не зарегистрирован на этот фестиваль
     const existingRegistration = await FestRegistration.findOne({
       where: {
-        userId: session.user.id,
+        userId,
         festivalId
       }
     });
@@ -74,7 +82,7 @@ export default defineEventHandler(async (event) => {
     if (existingRegistration) {
       throw createError({
         statusCode: 400,
-        message: 'Вы уже зарегистрированы на этот фестиваль'
+        message: 'Пользователь уже зарегистрирован на этот фестиваль'
       });
     }
 
@@ -84,7 +92,7 @@ export default defineEventHandler(async (event) => {
     try {
       // Создаем запись о регистрации
       const registration = await FestRegistration.create({
-        userId: session.user.id,
+        userId,
         festivalId,
         arrivalDate,
         departureDate,
@@ -118,17 +126,6 @@ export default defineEventHandler(async (event) => {
         await Promise.all(childPromises);
       }
 
-      // Получаем информацию о департаментах для ответа
-      let selectedDepartments: FestDepartmentAttributes[] = [];
-      if (departmentIds && departmentIds.length > 0) {
-        selectedDepartments = await FestDepartment.findAll({
-          where: {
-            id: departmentIds
-          },
-          attributes: ['id', 'title', 'joinText']
-        });
-      }
-
       // Фиксируем транзакцию
       await transaction.commit();
 
@@ -137,18 +134,16 @@ export default defineEventHandler(async (event) => {
         message: 'Регистрация успешно создана',
         registration: {
           id: registration.id,
-          userId: registration.userId,
-          festivalId: registration.festivalId,
-          arrivalDate: registration.arrivalDate,
-          departureDate: registration.departureDate,
-          hasCar: registration.hasCar,
-          freeSeatsInCar: registration.freeSeatsInCar,
-          hasPet: registration.hasPet,
-          notes: registration.notes,
-          createdAt: registration.createdAt,
-          updatedAt: registration.updatedAt
-        },
-        departments: selectedDepartments
+          userId,
+          festivalId,
+          arrivalDate,
+          departureDate,
+          hasCar,
+          freeSeatsInCar,
+          hasPet,
+          notes,
+          registeredBy: session.user.id
+        }
       };
     } catch (error) {
       // Откатываем транзакцию в случае ошибки
@@ -156,10 +151,10 @@ export default defineEventHandler(async (event) => {
       throw error;
     }
   } catch (error: any) {
-    console.error('Ошибка при регистрации на фестиваль:', error);
+    console.error('Ошибка при создании регистрации:', error);
     throw createError({
       statusCode: error.statusCode || 500,
-      message: error.message || 'Ошибка при регистрации на фестиваль'
+      message: error.message || 'Ошибка при создании регистрации'
     });
   }
 }); 

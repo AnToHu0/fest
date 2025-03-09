@@ -7,9 +7,14 @@ interface Props {
   userData: User;
   isAdmin?: boolean;
   isCreatingNew?: boolean;
+  allowRoleManagement?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  isAdmin: false,
+  isCreatingNew: false,
+  allowRoleManagement: false
+});
 const emit = defineEmits(['saved', 'cancel']);
 
 // Разбиваем ФИО на составляющие при инициализации
@@ -240,7 +245,7 @@ const handleSubmit = async (closeAfterSave = false) => {
       </div>
 
       <!-- Управление ролями (только для админов) -->
-      <div v-if="isAdmin">
+      <div v-if="isAdmin && allowRoleManagement">
         <UserRolesSelect
           :user="userData"
           @update="(roles) => userData.roles = roles"
@@ -312,7 +317,7 @@ const handleSubmit = async (closeAfterSave = false) => {
     </form>
 
     <!-- Таблица детей -->
-    <div v-if="userData.id" class="pt-6 border-t">
+    <div v-if="userData.id" class="border-t pt-6">
       <ChildrenTable
         :userId="userData.id"
         :parentData="userData"

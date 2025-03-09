@@ -35,7 +35,7 @@ FestRegistrationDepartment.init(
     registrationId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'registration_id',
+      field: 'registrationId',
       references: {
         model: 'fest_registrations',
         key: 'id'
@@ -46,7 +46,7 @@ FestRegistrationDepartment.init(
     departmentId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'department_id',
+      field: 'departmentId',
       references: {
         model: 'fest_departments',
         key: 'id'
@@ -59,11 +59,10 @@ FestRegistrationDepartment.init(
     tableName: 'fest_registration_departments',
     sequelize,
     timestamps: true,
-    underscored: true,
     indexes: [
       {
         unique: false,
-        fields: ['registration_id', 'department_id'],
+        fields: ['registrationId', 'departmentId'],
         name: 'fest_registration_departments_index'
       }
     ]

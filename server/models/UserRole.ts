@@ -53,7 +53,7 @@ UserRole.init(
       {
         fields: ['userId', 'roleId'],
         unique: false,
-        name: 'user_role_idx'
+        name: 'userRoleIdx'
       }
     ]
   }
