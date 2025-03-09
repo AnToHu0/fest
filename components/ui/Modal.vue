@@ -9,6 +9,10 @@ const props = defineProps({
   maxWidth: {
     type: String,
     default: '600px'
+  },
+  zIndex: {
+    type: Number,
+    default: 50
   }
 });
 
@@ -18,13 +22,56 @@ const modalRef = ref<HTMLElement | null>(null);
 
 // Закрытие модального окна при клике вне его содержимого
 const handleClickOutside = (event: MouseEvent) => {
+  // Проверяем, что клик не происходит на элементе с более высоким z-index
+  // Например, на модальном окне подтверждения
+  const target = event.target as HTMLElement;
+  
+  // Проверяем, есть ли открытые модальные окна с более высоким z-index
+  const hasHigherZIndexModals = document.querySelectorAll('[role="dialog"]').length > 1;
+  
+  // Если есть другие открытые модальные окна, не закрываем текущее
+  if (hasHigherZIndexModals) {
+    // Проверяем z-index элемента, на котором произошел клик
+    const targetZIndex = getComputedZIndex(target);
+    
+    // Если z-index цели клика выше, чем z-index текущего модального окна,
+    // то не закрываем текущее модальное окно
+    if (targetZIndex > props.zIndex) {
+      return;
+    }
+    
+    // Проверяем, не является ли цель клика частью другого модального окна
+    let currentElement = target;
+    while (currentElement && currentElement !== document.body) {
+      if (currentElement.getAttribute('role') === 'dialog' && currentElement !== modalRef.value) {
+        // Клик был внутри другого модального окна, не закрываем текущее
+        return;
+      }
+      currentElement = currentElement.parentElement as HTMLElement;
+    }
+  }
+  
   if (modalRef.value && !modalRef.value.contains(event.target as Node)) {
     emit('close');
   }
 };
 
+// Получение вычисленного z-index элемента
+const getComputedZIndex = (element: HTMLElement): number => {
+  const zIndex = window.getComputedStyle(element).zIndex;
+  return zIndex === 'auto' ? 0 : parseInt(zIndex, 10);
+};
+
 // Закрытие модального окна при нажатии Escape
 const handleKeyDown = (event: KeyboardEvent) => {
+  // Проверяем, есть ли открытые модальные окна с более высоким z-index
+  const hasHigherZIndexModals = document.querySelectorAll('[role="dialog"]').length > 1;
+  
+  // Если есть другие открытые модальные окна, не реагируем на Escape
+  if (hasHigherZIndexModals) {
+    return;
+  }
+  
   if (event.key === 'Escape') {
     emit('close');
   }
@@ -32,12 +79,24 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 // Блокировка прокрутки страницы при открытом модальном окне
 const disableBodyScroll = () => {
-  document.body.style.overflow = 'hidden';
+  // Проверяем, есть ли уже открытые модальные окна
+  const hasOpenModals = document.querySelectorAll('.fixed.inset-0.overflow-y-auto').length > 0;
+  
+  // Блокируем прокрутку только если это первое открытое модальное окно
+  if (!hasOpenModals) {
+    document.body.style.overflow = 'hidden';
+  }
 };
 
 // Восстановление прокрутки страницы при закрытии модального окна
 const enableBodyScroll = () => {
-  document.body.style.overflow = '';
+  // Проверяем, есть ли еще открытые модальные окна
+  const hasOpenModals = document.querySelectorAll('.fixed.inset-0.overflow-y-auto').length > 1;
+  
+  // Восстанавливаем прокрутку только если нет других открытых модальных окон
+  if (!hasOpenModals) {
+    document.body.style.overflow = '';
+  }
 };
 
 // Добавление обработчиков событий при монтировании компонента
@@ -51,12 +110,19 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', handleClickOutside);
   document.removeEventListener('keydown', handleKeyDown);
-  enableBodyScroll();
+  
+  // Принудительно восстанавливаем прокрутку при размонтировании последнего модального окна
+  setTimeout(() => {
+    const hasOpenModals = document.querySelectorAll('.fixed.inset-0.overflow-y-auto').length > 0;
+    if (!hasOpenModals) {
+      document.body.style.overflow = '';
+    }
+  }, 100);
 });
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="fixed inset-0 overflow-y-auto" :style="{ zIndex: zIndex }">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
       <!-- Затемнение фона -->
       <div class="fixed inset-0 transition-opacity" aria-hidden="true">
