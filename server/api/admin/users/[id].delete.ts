@@ -1,5 +1,6 @@
 import { User } from '~/server/models/User';
 import { getServerSession } from '#auth';
+import sequelize from '~/server/database';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -12,6 +13,14 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Проверяем, есть ли у пользователя роль admin
+    if (!session.user.roles?.includes('admin')) {
+      throw createError({
+        statusCode: 403,
+        message: 'Недостаточно прав для выполнения операции'
+      });
+    }
+
     // Получаем ID пользователя из параметров
     const userId = event.context.params?.id;
     if (!userId) {
@@ -21,8 +30,16 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Находим пользователя
-    const user = await User.findByPk(userId);
+    // Находим пользователя вместе с его детьми
+    const user = await User.findByPk(userId, {
+      include: [
+        {
+          model: User,
+          as: 'children'
+        }
+      ]
+    });
+
     if (!user) {
       throw createError({
         statusCode: 404,
@@ -30,12 +47,25 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Удаляем пользователя
-    await user.destroy();
+    // Используем транзакцию для удаления пользователя и его детей
+    await sequelize.transaction(async (t) => {
+      // Если у пользователя есть дети, удаляем их сначала
+      if (user.children && user.children.length > 0) {
+        for (const child of user.children) {
+          await User.destroy({
+            where: { id: child.id },
+            transaction: t
+          });
+        }
+      }
+
+      // Затем удаляем самого пользователя
+      await user.destroy({ transaction: t });
+    });
 
     return {
       success: true,
-      message: 'Пользователь успешно удален'
+      message: 'Пользователь и все его дети успешно удалены'
     };
 
   } catch (error: any) {

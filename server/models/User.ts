@@ -169,7 +169,9 @@ User.init(
 // Определяем связь родитель-ребенок
 User.hasMany(User, {
   as: 'children',
-  foreignKey: 'parentId'
+  foreignKey: 'parentId',
+  onDelete: 'CASCADE',
+  hooks: true
 });
 User.belongsTo(User, { as: 'parent', foreignKey: 'parentId' });
 

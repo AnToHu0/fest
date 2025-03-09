@@ -31,6 +31,7 @@ const userToDelete = ref<User | null>(null);
 // Состояние модального окна редактирования
 const isEditModalOpen = ref(false);
 const selectedUser = ref<User | null>(null);
+const isCreatingNewUser = ref(false);
 
 // Следим за изменением поискового запроса с debounce
 watch(searchQuery, (newValue) => {
@@ -84,6 +85,21 @@ const getSortIcon = (field: string) => {
 // Обработка редактирования пользователя
 const handleEdit = (user: User) => {
   selectedUser.value = user;
+  isCreatingNewUser.value = false;
+  isEditModalOpen.value = true;
+};
+
+// Обработка создания нового пользователя
+const handleCreateUser = () => {
+  selectedUser.value = {
+    id: 0,
+    fullName: '',
+    email: '',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  } as User;
+  isCreatingNewUser.value = true;
   isEditModalOpen.value = true;
 };
 
@@ -112,18 +128,21 @@ const cancelDelete = () => {
 const closeEditModal = () => {
   isEditModalOpen.value = false;
   selectedUser.value = null;
+  isCreatingNewUser.value = false;
 };
 
 // Обработка успешного сохранения
-const handleSaved = () => {
-  closeEditModal();
+const handleSaved = (closeAfterSave = true) => {
+  if (closeAfterSave) {
+    closeEditModal();
+  }
   emit('refresh');
 };
 </script>
 
 <template>
   <div class="space-y-4">
-    <!-- Поиск -->
+    <!-- Поиск и кнопка добавления -->
     <div class="flex justify-between items-center">
       <div class="relative flex-1 max-w-md">
         <input
@@ -137,6 +156,13 @@ const handleSaved = () => {
           class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"
         />
       </div>
+      <button
+        @click="handleCreateUser"
+        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center"
+      >
+        <Icon name="mdi:plus" class="w-5 h-5 mr-1" />
+        <span>Добавить пользователя</span>
+      </button>
     </div>
 
     <!-- Таблица -->
@@ -276,10 +302,10 @@ const handleSaved = () => {
       @cancel="cancelDelete"
     />
 
-    <!-- Модальное окно редактирования пользователя -->
+    <!-- Модальное окно редактирования/создания пользователя -->
     <Modal
       v-if="isEditModalOpen"
-      title="Редактирование пользователя"
+      :title="isCreatingNewUser ? 'Добавление пользователя' : 'Редактирование пользователя'"
       @close="closeEditModal"
       size="xl"
     >
@@ -287,6 +313,7 @@ const handleSaved = () => {
         v-if="selectedUser"
         :userData="selectedUser"
         :isAdmin="true"
+        :isCreatingNew="isCreatingNewUser"
         @saved="handleSaved"
         @cancel="closeEditModal"
       />
