@@ -2,6 +2,7 @@ import { Model, DataTypes, Optional, Sequelize } from 'sequelize';
 import bcrypt from 'bcrypt';
 import sequelize from '~/server/database';
 import { Role } from './Role';
+import type { FestDepartment } from './FestDepartment';
 
 
 export interface UserAttributes {
@@ -22,12 +23,13 @@ export interface UserAttributes {
   parentId: number | null;
   Roles?: Role[];
   children?: UserAttributes[];
+  Departments?: FestDepartment[];
 }
 
 
 export interface UserCreationAttributes extends Optional<UserAttributes,
   'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt' |
-  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles' | 'children' | 'searchField' | 'adminNotes'> { }
+  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles' | 'children' | 'searchField' | 'adminNotes' | 'Departments'> { }
 
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -48,6 +50,7 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare parentId: number | null;
   declare Roles?: Role[];
   declare children?: UserAttributes[];
+  declare Departments?: FestDepartment[];
 
 
   async verifyPassword(password: string): Promise<boolean> {
@@ -174,5 +177,13 @@ User.hasMany(User, {
   hooks: true
 });
 User.belongsTo(User, { as: 'parent', foreignKey: 'parentId' });
+
+// Добавляем связь многие ко многим с департаментами
+User.belongsToMany(sequelize.models.FestDepartment || {}, {
+  through: 'fest_department_admins',
+  foreignKey: 'user_id',
+  otherKey: 'department_id',
+  as: 'Departments'
+});
 
 export default User; 

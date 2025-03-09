@@ -9,11 +9,11 @@ export interface FestRoomAttributes {
   floor: number;
   number: number;
   size: number;
-  desc: string;
+  description: string;
 }
 
 
-export interface FestRoomCreationAttributes extends Optional<FestRoomAttributes, 'id' | 'desc'> { }
+export interface FestRoomCreationAttributes extends Optional<FestRoomAttributes, 'id' | 'description'> { }
 
 
 export class FestRoom extends Model<FestRoomAttributes, FestRoomCreationAttributes> implements FestRoomAttributes {
@@ -22,7 +22,7 @@ export class FestRoom extends Model<FestRoomAttributes, FestRoomCreationAttribut
   declare floor: number;
   declare number: number;
   declare size: number;
-  declare desc: string;
+  declare description: string;
 
   
   static associate(models: Models) {
@@ -54,7 +54,7 @@ FestRoom.init(
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    desc: {
+    description: {
       type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: ''
