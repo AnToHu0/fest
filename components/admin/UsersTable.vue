@@ -82,6 +82,34 @@ const getSortIcon = (field: string) => {
   return props.sortOrder === 'asc' ? 'mdi:sort-ascending' : 'mdi:sort-descending';
 };
 
+// Получение стилей для роли
+const getRoleBadgeClasses = (role: string) => {
+  switch (role) {
+    case 'user':
+      return 'bg-green-50 text-green-700 border border-green-200';
+    case 'admin':
+      return 'bg-red-50 text-red-700 border border-red-200';
+    default:
+      return 'bg-orange-50 text-orange-700 border border-orange-200';
+  }
+};
+
+// Получение названия роли
+const getRoleTitle = (role: string) => {
+  switch (role) {
+    case 'user':
+      return 'Пользователь';
+    case 'admin':
+      return 'Администратор';
+    case 'accommodation_manager':
+      return 'Ответственный за расселение';
+    case 'registrar':
+      return 'Регистратор';
+    default:
+      return role;
+  }
+};
+
 // Обработка редактирования пользователя
 const handleEdit = (user: User) => {
   selectedUser.value = user;
@@ -196,6 +224,9 @@ const handleSaved = (closeAfterSave = true) => {
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Дети
               </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                Роли
+              </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Действия
               </th>
@@ -203,12 +234,12 @@ const handleSaved = (closeAfterSave = true) => {
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-if="isLoading">
-              <td colspan="6" class="px-6 py-2.5 text-center text-sm text-gray-500">
+              <td colspan="7" class="px-6 py-2.5 text-center text-sm text-gray-500">
                 Загрузка...
               </td>
             </tr>
             <tr v-else-if="users.length === 0">
-              <td colspan="6" class="px-6 py-2.5 text-center text-sm text-gray-500">
+              <td colspan="7" class="px-6 py-2.5 text-center text-sm text-gray-500">
                 Пользователи не найдены
               </td>
             </tr>
@@ -228,6 +259,20 @@ const handleSaved = (closeAfterSave = true) => {
               </td>
               <td class="px-6 py-2.5 whitespace-nowrap text-sm text-gray-500">
                 {{ user.childrenCount || 0 }}
+              </td>
+              <td class="px-6 py-2.5 whitespace-nowrap text-sm text-gray-500 max-w-[12rem]">
+                <div class="flex items-center">
+                  <div class="flex flex-wrap gap-0.5">
+                    <span 
+                      v-for="role in user.roles" 
+                      :key="role"
+                      class="px-1.5 py-0.5 text-[10px] leading-none rounded-full"
+                      :class="getRoleBadgeClasses(role)"
+                    >
+                      {{ getRoleTitle(role) }}
+                    </span>
+                  </div>
+                </div>
               </td>
               <td class="px-6 py-2.5 whitespace-nowrap text-right text-sm font-medium">
                 <button
@@ -291,17 +336,6 @@ const handleSaved = (closeAfterSave = true) => {
       </div>
     </div>
 
-    <!-- Диалог подтверждения удаления -->
-    <ConfirmDialog
-      :is-open="isConfirmDialogOpen"
-      title="Удаление пользователя"
-      :message="userToDelete ? `Вы действительно хотите удалить пользователя ${userToDelete.fullName}?` : ''"
-      confirm-text="Удалить"
-      cancel-text="Отмена"
-      @confirm="confirmDelete"
-      @cancel="cancelDelete"
-    />
-
     <!-- Модальное окно редактирования/создания пользователя -->
     <Modal
       v-if="isEditModalOpen"
@@ -318,5 +352,16 @@ const handleSaved = (closeAfterSave = true) => {
         @cancel="closeEditModal"
       />
     </Modal>
+
+    <!-- Диалог подтверждения удаления -->
+    <ConfirmDialog
+      :is-open="isConfirmDialogOpen"
+      title="Удаление пользователя"
+      :message="userToDelete ? `Вы действительно хотите удалить пользователя ${userToDelete.fullName}?` : ''"
+      confirm-text="Удалить"
+      cancel-text="Отмена"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </div>
 </template> 

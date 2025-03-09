@@ -65,7 +65,7 @@ export async function initDatabase() {
         // При первом создании базы инициализируем базовые роли
         try {
           console.log('Инициализируем роли...');
-          const initRoles = (await import('./utils/initRoles')).default;
+          const { initRoles } = await import('./utils/initRoles');
           await initRoles();
           console.log('Роли инициализированы.');
         } catch (error) {
@@ -77,6 +77,16 @@ export async function initDatabase() {
           console.log('Обновляем структуру базы данных (режим разработки)...');
           await sequelize.sync({ alter: true });
           console.log('Структура базы данных обновлена.');
+          
+          // Проверяем и инициализируем роли в режиме разработки
+          try {
+            console.log('Проверяем наличие базовых ролей...');
+            const { initRoles } = await import('./utils/initRoles');
+            await initRoles();
+            console.log('Роли проверены и обновлены.');
+          } catch (error) {
+            console.error('Ошибка при проверке ролей:', error);
+          }
         } else {
           // В продакшене только проверяем соответствие структуры
           console.log('Проверяем структуру существующей базы данных...');

@@ -1,5 +1,8 @@
 import { User } from '~/server/models/User';
+import { Role } from '~/server/models/Role';
+import { UserRole } from '~/server/models/UserRole';
 import { getServerSession } from '#auth';
+import sequelize from '~/server/database';
 
 export default defineEventHandler(async (event) => {
   // Проверяем авторизацию
@@ -23,23 +26,45 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
 
   try {
-    const user = await User.findByPk(id);
-    
-    if (!user) {
-      throw createError({
-        statusCode: 404,
-        message: 'Пользователь не найден'
-      });
-    }
+    // Используем транзакцию для обновления пользователя и его ролей
+    await sequelize.transaction(async (t) => {
+      const user = await User.findByPk(id, { transaction: t });
+      
+      if (!user) {
+        throw createError({
+          statusCode: 404,
+          message: 'Пользователь не найден'
+        });
+      }
 
-    // Обновляем данные пользователя
-    await user.update({
-      fullName: body.fullName,
-      spiritualName: body.spiritualName,
-      email: body.email,
-      phone: body.phone,
-      city: body.city,
-      adminNotes: body.adminNotes
+      // Обновляем данные пользователя
+      await user.update({
+        fullName: body.fullName,
+        spiritualName: body.spiritualName,
+        email: body.email,
+        phone: body.phone,
+        city: body.city,
+        adminNotes: body.adminNotes,
+        birthDate: body.birthDate
+      }, { transaction: t });
+
+      // Если переданы роли, обновляем их
+      if (body.roles) {
+        // Удаляем все текущие роли пользователя
+        await UserRole.destroy({
+          where: { userId: user.id },
+          transaction: t
+        });
+
+        // Получаем все роли из базы
+        const roles = await Role.findAll({
+          where: { name: body.roles },
+          transaction: t
+        });
+
+        // Добавляем новые роли
+        await user.setRoles(roles, { transaction: t });
+      }
     });
 
     return { message: 'Пользователь успешно обновлен' };

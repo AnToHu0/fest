@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { User } from '~/types/user';
 import ChildrenTable from './ChildrenTable.vue';
+import UserRolesSelect from '~/components/admin/UserRolesSelect.vue';
 
 interface Props {
   userData: User;
@@ -24,7 +25,8 @@ const form = ref({
   city: props.userData.city || '',
   adminNotes: props.userData.adminNotes || '',
   birthDate: props.userData.birthDate ? new Date(props.userData.birthDate).toISOString().split('T')[0] : '',
-  agreeToTerms: false
+  agreeToTerms: false,
+  roles: props.userData.roles || []
 });
 
 // Функции для форматирования телефона
@@ -90,6 +92,11 @@ const fullName = computed(() => {
 
 const isLoading = ref(false);
 const errorMessage = ref('');
+
+// Добавим watch для синхронизации ролей
+watch(() => props.userData.roles, (newRoles) => {
+  form.value.roles = newRoles || [];
+}, { immediate: true });
 
 const handleSubmit = async (closeAfterSave = false) => {
   isLoading.value = true;
@@ -229,6 +236,14 @@ const handleSubmit = async (closeAfterSave = false) => {
           v-model="form.city"
           type="text"
           class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-colors"
+        />
+      </div>
+
+      <!-- Управление ролями (только для админов) -->
+      <div v-if="isAdmin">
+        <UserRolesSelect
+          :user="userData"
+          @update="(roles) => userData.roles = roles"
         />
       </div>
 
