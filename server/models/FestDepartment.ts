@@ -1,14 +1,12 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
-import { User } from './User';
+import type { Models } from './index';
 
 
 export interface FestDepartmentAttributes {
   id: number;
   title: string;
-  admin_id: number;
   public: boolean;
-  additional_emails: string;
 }
 
 
@@ -18,13 +16,16 @@ export interface FestDepartmentCreationAttributes extends Optional<FestDepartmen
 export class FestDepartment extends Model<FestDepartmentAttributes, FestDepartmentCreationAttributes> implements FestDepartmentAttributes {
   declare id: number;
   declare title: string;
-  declare admin_id: number;
   declare public: boolean;
-  declare additional_emails: string;
 
   
-  static associate(models: any) {
-    this.belongsTo(models.User, { foreignKey: 'admin_id', as: 'User' });
+  static associate(models: Models) {
+    this.belongsToMany(models.User, { 
+      through: 'fest_department_admins',
+      foreignKey: 'department_id',
+      otherKey: 'user_id',
+      as: 'Admins'
+    });
   }
 }
 
@@ -41,19 +42,10 @@ FestDepartment.init(
       allowNull: false,
       defaultValue: ''
     },
-    admin_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
     public: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: true
-    },
-    additional_emails: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-      defaultValue: ''
     }
   },
   {
