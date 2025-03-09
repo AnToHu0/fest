@@ -6,17 +6,19 @@ import type { Models } from './index';
 export interface FestDepartmentAttributes {
   id: number;
   title: string;
-  public: boolean;
+  isPublic: boolean;
+  joinText: string; // Текст, появляющийся при вступлении в департамент
 }
 
 
-export interface FestDepartmentCreationAttributes extends Optional<FestDepartmentAttributes, 'id'> { }
+export interface FestDepartmentCreationAttributes extends Optional<FestDepartmentAttributes, 'id' | 'joinText'> { }
 
 
 export class FestDepartment extends Model<FestDepartmentAttributes, FestDepartmentCreationAttributes> implements FestDepartmentAttributes {
   declare id: number;
   declare title: string;
-  declare public: boolean;
+  declare isPublic: boolean;
+  declare joinText: string;
 
   
   static associate(models: Models) {
@@ -25,6 +27,13 @@ export class FestDepartment extends Model<FestDepartmentAttributes, FestDepartme
       foreignKey: 'department_id',
       otherKey: 'user_id',
       as: 'Admins'
+    });
+    
+    this.belongsToMany(models.Festival, { 
+      through: 'fest_festival_departments',
+      foreignKey: 'department_id',
+      otherKey: 'festival_id',
+      as: 'Festivals'
     });
   }
 }
@@ -42,10 +51,16 @@ FestDepartment.init(
       allowNull: false,
       defaultValue: ''
     },
-    public: {
+    isPublic: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      defaultValue: true
+      defaultValue: true,
+      field: 'public' // Сохраняем имя поля в базе данных как 'public'
+    },
+    joinText: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: ''
     }
   },
   {

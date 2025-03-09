@@ -6,6 +6,8 @@ import { FestRoom } from './FestRoom';
 import { Role } from './Role';
 import { UserRole } from './UserRole';
 import { FestDepartmentAdmin } from './FestDepartmentAdmin';
+import { Festival } from './Festival';
+import { FestFestivalDepartment } from './FestFestivalDepartment';
 
 
 export interface Models {
@@ -17,6 +19,8 @@ export interface Models {
   Role: typeof Role;
   UserRole: typeof UserRole;
   FestDepartmentAdmin: typeof FestDepartmentAdmin;
+  Festival: typeof Festival;
+  FestFestivalDepartment: typeof FestFestivalDepartment;
   [key: string]: any;
 }
 
@@ -29,7 +33,9 @@ const models: Models = {
   FestRoom,
   Role,
   UserRole,
-  FestDepartmentAdmin
+  FestDepartmentAdmin,
+  Festival,
+  FestFestivalDepartment
 };
 
 
