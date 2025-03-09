@@ -68,13 +68,6 @@ const menuItems = computed((): MenuItem[] => {
         label: 'Администрирование'
       },
       {
-        path: '/dashboard/admin/users',
-        label: 'Пользователи',
-        icon: 'mdi:account-group',
-        roles: ['admin'],
-        type: 'link'
-      },
-      {
         path: '/dashboard/admin/payments',
         label: 'Платежи',
         icon: 'mdi:currency-usd',
@@ -82,16 +75,27 @@ const menuItems = computed((): MenuItem[] => {
         type: 'link'
       },
       {
-        path: '/dashboard/admin/festivals',
-        label: 'Управление фестивалями',
-        icon: 'mdi:calendar-edit',
+        path: '/dashboard/admin/accommodation',
+        label: 'Размещение',
+        icon: 'mdi:bed',
         roles: ['admin'],
         type: 'link'
       },
       {
-        path: '/dashboard/admin/accommodation',
-        label: 'Размещение',
-        icon: 'mdi:bed',
+        type: 'divider',
+        label: 'Настройки системы'
+      },
+      {
+        path: '/dashboard/admin/users',
+        label: 'Пользователи',
+        icon: 'mdi:account-group',
+        roles: ['admin'],
+        type: 'link'
+      },
+      {
+        path: '/dashboard/admin/festivals',
+        label: 'Управление фестивалями',
+        icon: 'mdi:calendar-edit',
         roles: ['admin'],
         type: 'link'
       },
