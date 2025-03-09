@@ -1,4 +1,4 @@
-import { Model, DataTypes, Optional } from 'sequelize';
+import { Model, DataTypes, Optional, Op } from 'sequelize';
 import sequelize from '~/server/database';
 import type { Models } from './index';
 
@@ -111,7 +111,22 @@ Festival.init(
   {
     sequelize,
     tableName: 'fest_festivals',
-    timestamps: true
+    timestamps: true,
+    hooks: {
+      beforeSave: async (festival: Festival) => {
+        // Если фестиваль становится активным, деактивируем все остальные
+        if (festival.isActive) {
+          await Festival.update(
+            { isActive: false },
+            { 
+              where: { 
+                id: { [Op.ne]: festival.id } 
+              } 
+            }
+          );
+        }
+      }
+    }
   }
 );
 

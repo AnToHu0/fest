@@ -16,6 +16,9 @@ export default defineNuxtConfig({
     }
   },
 
+  // Включаем режим SPA
+  ssr: false,
+
   runtimeConfig: {
     authSecret: process.env.AUTH_SECRET,
     databasePath: process.env.DATABASE_PATH,
