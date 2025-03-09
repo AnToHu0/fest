@@ -2,6 +2,8 @@
 import type { Festival, FestivalFormData } from '~/types/festival';
 import FestivalCard from '~/components/admin/FestivalCard.vue';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.vue';
+import FestivalForm from '~/components/admin/FestivalForm.vue';
+import Modal from '~/components/ui/Modal.vue';
 
 definePageMeta({
   middleware: "auth",
@@ -160,23 +162,6 @@ const getDepartmentTitle = (deptId: number) => {
 const openCreateModal = () => {
   isEditing.value = false;
   currentFestival.value = null;
-  
-  // Сброс формы и автоматический выбор всех департаментов
-  formData.value = {
-    startDate: '',
-    endDate: '',
-    isActive: false,
-    availableBuildings: [],
-    announcementText: '',
-    year: new Date().getFullYear(),
-    adultPrice: 0,
-    teenPrice: 0,
-    childPrice: 0,
-    petPrice: 0,
-    carPrice: 0,
-    departments: departments.value.map(dept => dept.id) // Выбираем все департаменты по умолчанию
-  };
-  
   showModal.value = true;
 };
 
@@ -184,32 +169,14 @@ const openCreateModal = () => {
 const openEditModal = (festival: Festival) => {
   isEditing.value = true;
   currentFestival.value = festival;
-  
-  // Получаем департаменты с учетом возможных вариантов имени свойства
-  const festivalDepartments = festival.departments || festival.Departments || [];
-  
-  // Заполнение формы данными фестиваля
-  formData.value = {
-    startDate: festival.startDate.split('T')[0],
-    endDate: festival.endDate.split('T')[0],
-    isActive: festival.isActive,
-    availableBuildings: [...festival.availableBuildings],
-    announcementText: festival.announcementText,
-    year: festival.year,
-    adultPrice: festival.adultPrice,
-    teenPrice: festival.teenPrice,
-    childPrice: festival.childPrice,
-    petPrice: festival.petPrice,
-    carPrice: festival.carPrice,
-    departments: festivalDepartments.map(d => d.id)
-  };
-  
   showModal.value = true;
 };
 
 // Закрытие модального окна
 const closeModal = () => {
   showModal.value = false;
+  currentFestival.value = null;
+  isEditing.value = false;
 };
 
 // Обновление данных
@@ -241,8 +208,8 @@ const refreshData = async () => {
 };
 
 // Сохранение фестиваля
-const saveFestival = async () => {
-  if (!formData.value.startDate || !formData.value.endDate || !formData.value.year) {
+const saveFestival = async (formData: FestivalFormData) => {
+  if (!formData.startDate || !formData.endDate || !formData.year) {
     alert('Пожалуйста, заполните все обязательные поля');
     return;
   }
@@ -254,7 +221,7 @@ const saveFestival = async () => {
       // Обновление существующего фестиваля
       const response = await $fetch(`/api/admin/festivals/${currentFestival.value.id}`, {
         method: 'PUT',
-        body: formData.value
+        body: formData
       });
       
       if (response.success) {
@@ -265,7 +232,7 @@ const saveFestival = async () => {
       // Создание нового фестиваля
       const response = await $fetch('/api/admin/festivals', {
         method: 'POST',
-        body: formData.value
+        body: formData
       });
       
       if (response.success) {
@@ -380,279 +347,22 @@ const removeDepartment = (deptId: number, event?: Event) => {
     </div>
     
     <!-- Модальное окно для создания/редактирования фестиваля -->
-    <Teleport to="body">
-      <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-          <div class="p-6 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-              <h2 class="text-xl font-semibold text-gray-800">
-                {{ isEditing ? 'Редактирование фестиваля' : 'Создание нового фестиваля' }}
-              </h2>
-              <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
-                <Icon name="mdi:close" class="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-          
-          <div class="p-6">
-            <form @submit.prevent="saveFestival">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Основная информация -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Год фестиваля *</label>
-                  <input 
-                    v-model.number="formData.year"
-                    type="number" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
-                  <div class="flex items-center">
-                    <input 
-                      v-model="formData.isActive"
-                      type="checkbox" 
-                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span class="ml-2 text-sm text-gray-700">Активный фестиваль</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Дата начала *</label>
-                  <input 
-                    v-model="formData.startDate"
-                    type="date" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Дата окончания *</label>
-                  <input 
-                    v-model="formData.endDate"
-                    type="date" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                
-                <!-- Стоимость участия -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Стоимость для взрослого</label>
-                  <input 
-                    v-model.number="formData.adultPrice"
-                    type="number" 
-                    min="0"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Стоимость для подростка</label>
-                  <input 
-                    v-model.number="formData.teenPrice"
-                    type="number" 
-                    min="0"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Стоимость для ребенка</label>
-                  <input 
-                    v-model.number="formData.childPrice"
-                    type="number" 
-                    min="0"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Стоимость для животного</label>
-                  <input 
-                    v-model.number="formData.petPrice"
-                    type="number" 
-                    min="0"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Стоимость за автомобиль</label>
-                  <input 
-                    v-model.number="formData.carPrice"
-                    type="number" 
-                    min="0"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <!-- Доступные корпуса -->
-              <div class="mb-6 relative" ref="buildingsDropdownRef">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Доступные корпуса</label>
-                <div 
-                  @click="showBuildingsDropdown = !showBuildingsDropdown"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex justify-between items-center"
-                >
-                  <div class="flex flex-wrap gap-1">
-                    <span 
-                      v-if="formData.availableBuildings.length === 0" 
-                      class="text-gray-500"
-                    >
-                      Выберите корпуса
-                    </span>
-                    <span 
-                      v-else
-                      v-for="building in formData.availableBuildings" 
-                      :key="building"
-                      class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center"
-                    >
-                      Корпус {{ building }}
-                      <button 
-                        type="button"
-                        @click="removeBuilding(building, $event)" 
-                        class="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
-                      >
-                        <Icon name="mdi:close-circle" class="w-4 h-4" />
-                      </button>
-                    </span>
-                  </div>
-                  <Icon 
-                    :name="showBuildingsDropdown ? 'mdi:chevron-up' : 'mdi:chevron-down'" 
-                    class="w-5 h-5 text-gray-500"
-                  />
-                </div>
-                
-                <div 
-                  v-if="showBuildingsDropdown"
-                  class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                >
-                  <div class="p-2">
-                    <div 
-                      v-for="building in buildings" 
-                      :key="building"
-                      @click="toggleBuilding(building)"
-                      class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer rounded-md"
-                    >
-                      <div 
-                        class="w-4 h-4 border rounded mr-2 flex items-center justify-center"
-                        :class="{ 'bg-blue-500 border-blue-500': isBuildingSelected(building), 'border-gray-300': !isBuildingSelected(building) }"
-                      >
-                        <Icon 
-                          v-if="isBuildingSelected(building)"
-                          name="mdi:check" 
-                          class="w-3 h-3 text-white"
-                        />
-                      </div>
-                      <span>Корпус {{ building }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Департаменты -->
-              <div class="mb-6 relative" ref="departmentsDropdownRef">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Департаменты</label>
-                <div 
-                  @click="showDepartmentsDropdown = !showDepartmentsDropdown"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer flex justify-between items-center"
-                >
-                  <div class="flex flex-wrap gap-1">
-                    <span 
-                      v-if="formData.departments?.length === 0" 
-                      class="text-gray-500"
-                    >
-                      Выберите департаменты
-                    </span>
-                    <span 
-                      v-else
-                      v-for="deptId in formData.departments" 
-                      :key="deptId"
-                      class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center"
-                    >
-                      {{ getDepartmentTitle(deptId) }}
-                      <button 
-                        type="button"
-                        @click="removeDepartment(deptId, $event)" 
-                        class="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
-                      >
-                        <Icon name="mdi:close-circle" class="w-4 h-4" />
-                      </button>
-                    </span>
-                  </div>
-                  <Icon 
-                    :name="showDepartmentsDropdown ? 'mdi:chevron-up' : 'mdi:chevron-down'" 
-                    class="w-5 h-5 text-gray-500"
-                  />
-                </div>
-                
-                <div 
-                  v-if="showDepartmentsDropdown"
-                  class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                >
-                  <div class="p-2">
-                    <div 
-                      v-for="dept in departments" 
-                      :key="dept.id"
-                      @click="toggleDepartment(dept.id)"
-                      class="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer rounded-md"
-                    >
-                      <div 
-                        class="w-4 h-4 border rounded mr-2 flex items-center justify-center"
-                        :class="{ 'bg-blue-500 border-blue-500': isDepartmentSelected(dept.id), 'border-gray-300': !isDepartmentSelected(dept.id) }"
-                      >
-                        <Icon 
-                          v-if="isDepartmentSelected(dept.id)"
-                          name="mdi:check" 
-                          class="w-3 h-3 text-white"
-                        />
-                      </div>
-                      <span>{{ dept.title }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Текст анонса -->
-              <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Текст анонса</label>
-                <textarea 
-                  v-model="formData.announcementText"
-                  rows="4"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Введите текст анонса фестиваля"
-                ></textarea>
-              </div>
-              
-              <div class="flex justify-end space-x-3">
-                <button 
-                  type="button"
-                  @click="closeModal"
-                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Отмена
-                </button>
-                <button 
-                  type="submit"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
-                  :disabled="isLoading"
-                >
-                  <span v-if="isLoading" class="mr-2">
-                    <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                  </span>
-                  {{ isEditing ? 'Сохранить изменения' : 'Создать фестиваль' }}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <Modal
+      v-if="showModal"
+      :title="isEditing ? 'Редактирование фестиваля' : 'Создание нового фестиваля'"
+      @close="closeModal"
+      size="xl"
+    >
+      <FestivalForm
+        :is-editing="isEditing"
+        :current-festival="currentFestival"
+        :departments="departments"
+        :buildings="buildings"
+        :is-loading="isLoading"
+        @save="saveFestival"
+        @cancel="closeModal"
+      />
+    </Modal>
     
     <!-- Диалог подтверждения удаления -->
     <ConfirmDialog

@@ -45,8 +45,8 @@ export default defineEventHandler(async (event) => {
     // Находим запись администратора
     const admin = await FestDepartmentAdmin.findOne({
       where: {
-        department_id: departmentId,
-        user_id: userId
+        departmentId: departmentId,
+        userId: userId
       }
     });
 
