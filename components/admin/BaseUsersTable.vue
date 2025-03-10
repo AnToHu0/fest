@@ -4,6 +4,7 @@ import ConfirmDialog from '~/components/ui/ConfirmDialog.vue';
 import Modal from '~/components/ui/Modal.vue';
 import UserForm from '~/components/user/UserForm.vue';
 import PaymentReceiptModal from './PaymentReceiptModal.vue';
+import { usePhoneFormat } from '~/composables/usePhoneFormat';
 
 interface Props {
   users: User[];
@@ -62,6 +63,8 @@ const recentlyDeregisteredUserId = ref<number | null>(null);
 const isPaymentModalOpen = ref(false);
 const selectedUserForPayment = ref<User | null>(null);
 
+const { formatPhone } = usePhoneFormat();
+
 // Следим за изменением поискового запроса с debounce
 watch(searchQuery, (newValue) => {
   clearTimeout(searchTimeout);
@@ -79,12 +82,6 @@ watch(showOnlyRegistered, (newValue) => {
 onBeforeUnmount(() => {
   clearTimeout(searchTimeout);
 });
-
-// Форматирование телефона
-const formatPhone = (phone: string | null) => {
-  if (!phone) return '-';
-  return phone;
-};
 
 // Обработка изменения страницы
 const handlePageChange = (newPage: number) => {

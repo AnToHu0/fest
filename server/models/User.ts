@@ -107,9 +107,20 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
       foreignKey: 'parentId',
       as: 'children'
     });
+
+    // Добавляем связь для платежей, где пользователь является менеджером
+    this.hasMany(models.PaymentTransaction, {
+      foreignKey: 'adminId',
+      as: 'AdminPayments'
+    });
   }
 }
 
+// Функция для очистки телефона от всего, кроме цифр
+const cleanPhoneNumber = (phone: string | null): string | null => {
+  if (!phone) return null;
+  return phone.replace(/\D/g, '');
+};
 
 User.init(
   {
@@ -196,6 +207,10 @@ User.init(
           if (user.password) {
             user.password = await User.hashPassword(user.password);
           }
+          // Очищаем телефон от всего, кроме цифр
+          if (user.phone) {
+            user.phone = cleanPhoneNumber(user.phone);
+          }
           user.searchField = [
             user.fullName,
             user.spiritualName,
@@ -210,6 +225,10 @@ User.init(
         try {
           if (user.changed('password')) {
             user.password = await User.hashPassword(user.password);
+          }
+          // Очищаем телефон от всего, кроме цифр при обновлении
+          if (user.changed('phone')) {
+            user.phone = cleanPhoneNumber(user.phone);
           }
           if (user.changed('fullName') || user.changed('spiritualName') || user.changed('city')) {
             user.searchField = [

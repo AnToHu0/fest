@@ -38,7 +38,8 @@ export default defineEventHandler(async (event) => {
     const whereConditions: any = {
       [Op.or]: [
         { searchField: { [Op.like]: `%${search}%` } },
-        { email: { [Op.like]: `%${search}%` } }
+        { email: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } }
       ]
     };
     

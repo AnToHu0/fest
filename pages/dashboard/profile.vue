@@ -7,6 +7,8 @@ definePageMeta({
 import Loader from '~/components/ui/Loader.vue';
 import Modal from '~/components/ui/Modal.vue';
 import ChangePasswordForm from '~/components/user/ChangePasswordForm.vue';
+import { usePhoneFormat } from '~/composables/usePhoneFormat';
+import { usePhoneInputMask } from '~/composables/usePhoneInputMask';
 
 const { data } = useAuth();
 const userData = ref<any>(null);
@@ -18,55 +20,11 @@ const isSuccessVisible = ref(false);
 const isChangePasswordModalOpen = ref(false);
 const { hasRole } = useRoles();
 
+const { formatPhone } = usePhoneFormat();
+const { formatPhoneInput, handlePhoneInput } = usePhoneInputMask();
+
 // Проверяем, есть ли у пользователя роль user
 const canEditProfile = computed(() => hasRole('user'));
-
-// Форматирование телефона
-const formatPhone = (value: string) => {
-  if (!value) return '';
-
-  const startsWithPlus7 = value.startsWith('+7');
-
-  let digits = value.replace(/\D/g, '');
-
-  if (startsWithPlus7 && digits.startsWith('7')) {
-    digits = digits.substring(1);
-  }
-
-  if (!digits.length) return '+7';
-
-  if (digits.length <= 3) {
-    return `+7 (${digits}`;
-  } else if (digits.length <= 6) {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3)}`;
-  } else if (digits.length <= 8) {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
-  } else {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6, 8)}-${digits.substring(8, 10)}`;
-  }
-};
-
-// Обработчик ввода телефона
-const handlePhoneInput = (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  const cursorPosition = input.selectionStart;
-  const oldValue = input.value;
-  const newValue = formatPhone(input.value);
-
-  userData.value.phone = newValue;
-
-  nextTick(() => {
-    if (cursorPosition !== null) {
-      let newCursorPosition = cursorPosition + (newValue.length - oldValue.length);
-
-      if (newCursorPosition > 2 && newCursorPosition < 4 && newValue.length >= 4) {
-        newCursorPosition = 4;
-      }
-
-      input.setSelectionRange(newCursorPosition, newCursorPosition);
-    }
-  });
-};
 
 // Функция для отображения сообщения об успешном сохранении с автоматическим скрытием
 const showSuccessMessage = (message: string) => {
@@ -179,6 +137,11 @@ onMounted(async () => {
 
     // Загружаем данные с сервера
     await fetchUserData();
+
+    // Форматируем телефон
+    if (userData.value.phone) {
+      userData.value.phone = formatPhoneInput(userData.value.phone);
+    }
 
     // Если у пользователя нет роли user, перенаправляем его на главную страницу дашборда
     if (!canEditProfile.value) {
@@ -310,10 +273,10 @@ onMounted(async () => {
               id="phone"
               v-model="userData.phone"
               type="tel"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="+7 (___) ___-__-__"
-              @input="handlePhoneInput"
+              @input="handlePhoneInput($event, (value) => userData.phone = value)"
               required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>

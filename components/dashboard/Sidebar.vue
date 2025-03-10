@@ -126,6 +126,13 @@ const menuItems = computed((): MenuItem[] => {
         type: 'link'
       },
       {
+        path: '/dashboard/admin/settings/payments',
+        label: 'История платежей',
+        icon: 'mdi:history',
+        roles: ['admin'],
+        type: 'link'
+      },
+      {
         path: '/dashboard/admin/database',
         label: 'База данных',
         icon: 'mdi:database',

@@ -2,6 +2,8 @@
 import type { User } from '~/types/user';
 import ChildrenTable from './ChildrenTable.vue';
 import UserRolesSelect from '~/components/admin/UserRolesSelect.vue';
+import { usePhoneFormat } from '~/composables/usePhoneFormat';
+import { usePhoneInputMask } from '~/composables/usePhoneInputMask';
 
 interface Props {
   userData: User;
@@ -34,56 +36,12 @@ const form = ref({
   roles: props.userData.roles || []
 });
 
-// Функции для форматирования телефона
-const formatPhone = (value: string) => {
-  if (!value) return '';
-
-  const startsWithPlus7 = value.startsWith('+7');
-
-  let digits = value.replace(/\D/g, '');
-
-  if (startsWithPlus7 && digits.startsWith('7')) {
-    digits = digits.substring(1);
-  }
-
-  if (!digits.length) return '+7';
-
-  if (digits.length <= 3) {
-    return `+7 (${digits}`;
-  } else if (digits.length <= 6) {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3)}`;
-  } else if (digits.length <= 8) {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
-  } else {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6, 8)}-${digits.substring(8, 10)}`;
-  }
-};
-
-const handlePhoneInput = (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  const cursorPosition = input.selectionStart;
-  const oldValue = input.value;
-  const newValue = formatPhone(input.value);
-
-  form.value.phone = newValue;
-
-  nextTick(() => {
-    if (cursorPosition !== null) {
-      let newCursorPosition = cursorPosition + (newValue.length - oldValue.length);
-
-      if (newCursorPosition > 2 && newCursorPosition < 4 && newValue.length >= 4) {
-        newCursorPosition = 4;
-      }
-
-      input.setSelectionRange(newCursorPosition, newCursorPosition);
-    }
-  });
-};
+const { formatPhoneInput, handlePhoneInput } = usePhoneInputMask();
 
 // Инициализация телефона с маской при загрузке компонента
 onMounted(() => {
   if (form.value.phone) {
-    form.value.phone = formatPhone(form.value.phone);
+    form.value.phone = formatPhoneInput(form.value.phone);
   }
 });
 
@@ -228,7 +186,7 @@ const handleSubmit = async (closeAfterSave = false) => {
             v-model="form.phone"
             type="tel"
             placeholder="+7 (___) ___-__-__"
-            @input="handlePhoneInput"
+            @input="handlePhoneInput($event, (value) => form.phone = value)"
             class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-colors"
           />
         </div>

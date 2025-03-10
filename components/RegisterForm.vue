@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { usePhoneFormat } from '~/composables/usePhoneFormat';
+import { usePhoneInputMask } from '~/composables/usePhoneInputMask';
+
 const form = ref({
   lastName: "",
   firstName: "",
@@ -21,6 +24,9 @@ const showPrivacyPolicy = ref(false);
 const isLoading = ref(false);
 const emit = defineEmits(['register-success']);
 
+const { formatPhone } = usePhoneFormat();
+const { formatPhoneInput, handlePhoneInput } = usePhoneInputMask();
+
 const isFormValid = computed(() => {
   return form.value.lastName &&
     form.value.firstName &&
@@ -35,54 +41,16 @@ const isFormValid = computed(() => {
     form.value.agreeToTerms;
 });
 
-const formatPhone = (value: string) => {
-  if (!value) return '';
-
-  const startsWithPlus7 = value.startsWith('+7');
-
-  let digits = value.replace(/\D/g, '');
-
-  if (startsWithPlus7 && digits.startsWith('7')) {
-    digits = digits.substring(1);
-  }
-
-  if (!digits.length) return '+7';
-
-  if (digits.length <= 3) {
-    return `+7 (${digits}`;
-  } else if (digits.length <= 6) {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3)}`;
-  } else if (digits.length <= 8) {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
-  } else {
-    return `+7 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6, 8)}-${digits.substring(8, 10)}`;
-  }
-};
-
 const getDigitsOnly = (phone: string) => {
   return phone.replace(/\D/g, '');
 };
 
-const handlePhoneInput = (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  const cursorPosition = input.selectionStart;
-  const oldValue = input.value;
-  const newValue = formatPhone(input.value);
-
-  form.value.phone = newValue;
-
-  nextTick(() => {
-    if (cursorPosition !== null) {
-      let newCursorPosition = cursorPosition + (newValue.length - oldValue.length);
-
-      if (newCursorPosition > 2 && newCursorPosition < 4 && newValue.length >= 4) {
-        newCursorPosition = 4;
-      }
-
-      input.setSelectionRange(newCursorPosition, newCursorPosition);
-    }
-  });
-};
+// Инициализация телефона с маской при загрузке компонента
+onMounted(() => {
+  if (form.value.phone) {
+    form.value.phone = formatPhoneInput(form.value.phone);
+  }
+});
 
 function openPrivacyPolicy() {
   showPrivacyPolicy.value = true;
@@ -258,10 +226,9 @@ async function handleFormSubmit() {
           <input
             id="phone"
             v-model="form.phone"
-            class="w-full border p-1 rounded-lg text-sm"
             type="tel"
             placeholder="+7 (___) ___-__-__"
-            @input="handlePhoneInput"
+            @input="handlePhoneInput($event, (value) => form.phone = value)"
             required
           />
         </div>
