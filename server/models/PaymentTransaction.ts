@@ -11,6 +11,7 @@ export interface PaymentTransactionAttributes {
   paymentDest: string;
   amount: number;
   date: Date | null;
+  festivalId: number;
 }
 
 
@@ -25,11 +26,13 @@ export class PaymentTransaction extends Model<PaymentTransactionAttributes, Paym
   declare paymentDest: string;
   declare amount: number;
   declare date: Date | null;
+  declare festivalId: number;
 
   
   static associate(models: Models) {
     this.belongsTo(models.User, { foreignKey: 'customerId', as: 'User' });
     this.belongsTo(models.User, { foreignKey: 'adminId', as: 'Registrator' });
+    this.belongsTo(models.Festival, { foreignKey: 'festivalId', as: 'Festival' });
   }
 }
 
@@ -71,6 +74,15 @@ PaymentTransaction.init(
       type: DataTypes.DATE,
       allowNull: true,
       defaultValue: null
+    },
+    festivalId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: 'festivalId',
+      references: {
+        model: 'fest_festivals',
+        key: 'id'
+      }
     }
   },
   {

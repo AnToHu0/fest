@@ -9,11 +9,14 @@ const props = defineProps<{
   festival: Festival;
   userId?: number;
   initialData?: FestivalRegistration;
+  showFestivalInfo?: boolean;
 }>();
 
 const emit = defineEmits<{
   close: [];
   submit: [formData: FestivalRegistrationFormData];
+  update: [formData: FestivalRegistrationFormData];
+  delete: [];
 }>();
 
 // Состояние формы
@@ -74,10 +77,10 @@ onMounted(async () => {
       })) || []
     };
   } else {
-    // Иначе используем пустую форму
+    // Иначе используем даты фестиваля как начальные значения
     formData.value = {
-      arrivalDate: '',
-      departureDate: '',
+      arrivalDate: new Date(props.festival.startDate).toISOString().split('T')[0],
+      departureDate: new Date(props.festival.endDate).toISOString().split('T')[0],
       hasCar: false,
       freeSeatsInCar: 0,
       hasPet: false,
@@ -107,9 +110,14 @@ const fetchChildren = async () => {
   }
 };
 
-// Обработчик отправки формы
+// Обработчик отправки формы для новой регистрации
 const handleSubmit = async () => {
   emit('submit', formData.value);
+};
+
+// Обработчик отправки формы для обновления
+const handleUpdate = async () => {
+  emit('update', formData.value);
 };
 
 // Обработчик закрытия формы
@@ -165,7 +173,7 @@ const departmentOptions = computed(() => {
 <template>
   <form @submit.prevent="handleSubmit">
     <!-- Информация о фестивале -->
-    <div class="mb-6 p-4 bg-purple-50 rounded-lg">
+    <div v-if="showFestivalInfo" class="mb-6 p-4 bg-purple-50 rounded-lg">
       <h3 class="text-lg font-medium text-purple-800 mb-2">Информация о фестивале</h3>
       <p class="text-sm text-gray-700 mb-2">
         <span class="font-medium">Даты проведения:</span> 
@@ -311,20 +319,49 @@ const departmentOptions = computed(() => {
     </div>
     
     <!-- Кнопки -->
-    <div class="flex justify-end space-x-3">
-      <button 
-        type="button"
-        @click="handleClose"
-        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-      >
-        Отмена
-      </button>
-      <button 
-        type="submit"
-        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-      >
-        Зарегистрироваться
-      </button>
+    <div class="flex justify-between space-x-3">
+      <!-- Кнопка удаления (показывается только при редактировании) -->
+      <div>
+        <button 
+          v-if="props.initialData"
+          type="button"
+          @click="$emit('delete')"
+          class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          Удалить регистрацию
+        </button>
+      </div>
+
+      <!-- Правая группа кнопок -->
+      <div class="flex space-x-3">
+        <button 
+          type="button"
+          @click="handleClose"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Отмена
+        </button>
+        
+        <!-- Кнопка регистрации (показывается только для новой регистрации) -->
+        <button 
+          v-if="!props.initialData"
+          type="button"
+          @click="handleSubmit"
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Зарегистрироваться
+        </button>
+        
+        <!-- Кнопка сохранения изменений (показывается только при редактировании) -->
+        <button 
+          v-if="props.initialData"
+          type="button"
+          @click="handleUpdate"
+          class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          Сохранить изменения
+        </button>
+      </div>
     </div>
   </form>
 </template> 

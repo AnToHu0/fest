@@ -41,6 +41,22 @@ const handleParticipate = () => {
 const handleView = () => {
   emit('view', props.festival.id);
 };
+
+// Вычисляем, нужно ли показывать кнопку просмотра
+const showViewButton = computed(() => {
+  // Показываем кнопку просмотра если:
+  // 1. Фестиваль активный и пользователь зарегистрирован
+  // 2. Фестиваль неактивный и пользователь был зарегистрирован
+  return (isActive.value && isRegistered.value) || (!isActive.value && isRegistered.value);
+});
+
+// Вычисляем, нужно ли показывать кнопку участия
+const showParticipateButton = computed(() => {
+  // Показываем кнопку участия только если:
+  // 1. Фестиваль активный
+  // 2. Пользователь еще не зарегистрирован
+  return isActive.value && !isRegistered.value;
+});
 </script>
 
 <template>
@@ -62,7 +78,7 @@ const handleView = () => {
           </p>
         </div>
         <div v-if="!isActive" class="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-full">
-          {{ isPast ? 'Завершен' : 'Планируется' }}
+          Прошедший
         </div>
       </div>
       
@@ -72,7 +88,7 @@ const handleView = () => {
       
       <div class="flex space-x-3 mt-4">
         <button 
-          v-if="!isRegistered"
+          v-if="showParticipateButton"
           @click="handleParticipate"
           class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           :disabled="isPast"
@@ -81,7 +97,7 @@ const handleView = () => {
           Участвовать
         </button>
         <button 
-          v-if="isRegistered || isPast"
+          v-if="showViewButton"
           @click="handleView"
           class="w-full px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
         >

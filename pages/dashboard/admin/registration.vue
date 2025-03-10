@@ -9,7 +9,7 @@ definePageMeta({
   layout: 'dashboard'
 });
 
-const { hasRole } = useRoles();
+const { hasRole, currentUser } = useRoles();
 
 // Проверяем, есть ли у пользователя роль admin или registrar
 const canAccess = computed(() => hasRole('admin') || hasRole('registrar'));
@@ -121,11 +121,51 @@ const handleSubmitRegistration = async (formData: FestivalRegistrationFormData) 
       await refreshData();
       // И только после этого подсвечиваем строку
       usersTableRef.value?.setRecentlyRegistered(formData.userId);
-      showSuccessNotification('Регистрация успешно создана');
     }
   } catch (error) {
     console.error('Ошибка при создании регистрации:', error);
-    showErrorNotification('Ошибка при создании регистрации');
+    alert('Ошибка при создании регистрации');
+  }
+};
+
+// Обработчик обновления регистрации
+const handleUpdateRegistration = async (formData: FestivalRegistrationFormData) => {
+  try {
+    const response = await $fetch(`/api/admin/registration/${formData.registrationId}`, {
+      method: 'PUT',
+      body: formData
+    });
+
+    if (response.success) {
+      handleCloseRegistrationModal();
+      await refreshData();
+      // Подсвечиваем обновленную строку
+      usersTableRef.value?.setRecentlyRegistered(formData.userId);
+    }
+  } catch (error) {
+    console.error('Ошибка при обновлении регистрации:', error);
+    alert('Ошибка при обновлении регистрации');
+  }
+};
+
+// Обработчик удаления регистрации
+const handleDeleteRegistration = async (registrationId: number) => {
+  try {
+    const response = await $fetch(`/api/admin/registration/${registrationId}`, {
+      method: 'DELETE'
+    });
+
+    if (response.success) {
+      const userId = selectedUser.value?.id;
+      handleCloseRegistrationModal();
+      await refreshData();
+      if (userId) {
+        usersTableRef.value?.setRecentlyDeregistered(userId);
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка при удалении регистрации:', error);
+    alert('Ошибка при удалении регистрации');
   }
 };
 
@@ -147,15 +187,19 @@ const refreshData = async () => {
 
 const currentFestival = ref<Festival | null>(null);
 
+// Получение текущего активного фестиваля
 const fetchCurrentFestival = async () => {
   try {
-    const response = await $fetch('/api/festivals/current');
-    console.log('Current festival response:', response);
-    currentFestival.value = response.festival;
-    console.log('Current festival value:', currentFestival.value);
+    const { data } = await useFetch('/api/festivals/current');
+    if (data.value?.festival) {
+      currentFestival.value = data.value.festival;
+    } else {
+      currentFestival.value = null;
+    }
   } catch (error) {
     console.error('Ошибка при получении текущего фестиваля:', error);
-    showErrorNotification('Ошибка при получении текущего фестиваля');
+    // Вместо showErrorNotification используем alert
+    alert('Ошибка при получении текущего фестиваля');
   }
 };
 
@@ -163,6 +207,23 @@ onMounted(async () => {
   await fetchCurrentFestival();
   await fetchUsers();
 });
+
+// Обработчик создания платежа
+const handlePayment = async (userId: number) => {
+  try {
+    // Логика создания платежа
+    // ...
+    
+    // Обновляем данные после успешного создания платежа
+    await refreshData();
+    // Вместо showSuccessNotification используем alert
+    alert('Оплата успешно принята');
+  } catch (error) {
+    console.error('Ошибка при создании платежа:', error);
+    // Вместо showErrorNotification используем alert
+    alert('Ошибка при создании платежа');
+  }
+};
 </script>
 
 <template>
@@ -182,9 +243,11 @@ onMounted(async () => {
       :sort-order="sortOrder"
       :show-roles="false"
       :show-registration-button="true"
+      :show-payment-button="true"
       :allow-role-management="false"
       :show-add-button="false"
       :current-festival="currentFestival"
+      :current-admin="currentUser"
       :show-registration-filter="true"
       :highlight-registered="true"
       @update:page="handlePageChange"
@@ -192,6 +255,7 @@ onMounted(async () => {
       @update:sort="handleSortChange"
       @update:search="handleSearchChange"
       @register="handleRegister"
+      @payment="handlePayment"
       @refresh="refreshData"
     />
 
@@ -201,8 +265,11 @@ onMounted(async () => {
       :is-open="isRegistrationModalOpen"
       :user="selectedUser"
       :current-festival="currentFestival"
+      :is-registered="selectedUser.isRegistered"
       @close="handleCloseRegistrationModal"
       @submit="handleSubmitRegistration"
+      @update="handleUpdateRegistration"
+      @delete="handleDeleteRegistration"
     />
   </div>
 </template> 

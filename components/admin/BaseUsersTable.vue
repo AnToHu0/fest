@@ -3,6 +3,7 @@ import type { User } from '~/types/user';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.vue';
 import Modal from '~/components/ui/Modal.vue';
 import UserForm from '~/components/user/UserForm.vue';
+import PaymentReceiptModal from './PaymentReceiptModal.vue';
 
 interface Props {
   users: User[];
@@ -17,25 +18,29 @@ interface Props {
   sortOrder?: 'asc' | 'desc';
   showRoles?: boolean;
   showRegistrationButton?: boolean;
+  showPaymentButton?: boolean;
   allowRoleManagement?: boolean;
   showAddButton?: boolean;
   currentFestival?: Festival;
   showRegistrationFilter?: boolean;
   highlightRegistered?: boolean;
+  currentAdmin?: User | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
   showRoles: true,
   showRegistrationButton: false,
+  showPaymentButton: false,
   allowRoleManagement: true,
   showAddButton: true,
   currentFestival: undefined,
   showRegistrationFilter: false,
-  highlightRegistered: false
+  highlightRegistered: false,
+  currentAdmin: null
 });
 
-const emit = defineEmits(['update:page', 'update:search', 'update:limit', 'update:sort', 'edit', 'delete', 'refresh', 'register']);
+const emit = defineEmits(['update:page', 'update:search', 'update:limit', 'update:sort', 'edit', 'delete', 'refresh', 'register', 'payment']);
 
 const searchQuery = ref('');
 const showOnlyRegistered = ref(false);
@@ -50,7 +55,12 @@ const isEditModalOpen = ref(false);
 const selectedUser = ref<User | null>(null);
 const isCreatingNewUser = ref(false);
 
-const recentlyRegistered = ref<number | null>(null);
+const recentlyRegisteredUserId = ref<number | null>(null);
+const recentlyDeregisteredUserId = ref<number | null>(null);
+
+// Состояние модального окна оплаты
+const isPaymentModalOpen = ref(false);
+const selectedUserForPayment = ref<User | null>(null);
 
 // Следим за изменением поискового запроса с debounce
 watch(searchQuery, (newValue) => {
@@ -197,10 +207,10 @@ const handleSaved = (closeAfterSave = true) => {
 const getRowClasses = (user: User) => {
   const classes = ['transition-all duration-1000'];
   
-  if (recentlyRegistered.value === user.id) {
+  if (recentlyRegisteredUserId.value === user.id) {
     classes.push('bg-green-200');
     setTimeout(() => {
-      recentlyRegistered.value = null;
+      recentlyRegisteredUserId.value = null;
     }, 3000);
   } else if (props.highlightRegistered && user.isRegistered) {
     classes.push('bg-green-50');
@@ -209,11 +219,50 @@ const getRowClasses = (user: User) => {
   return classes.join(' ');
 };
 
+const setRecentlyRegistered = (userId: number) => {
+  recentlyRegisteredUserId.value = userId;
+  setTimeout(() => {
+    recentlyRegisteredUserId.value = null;
+  }, 2000);
+};
+
+const setRecentlyDeregistered = (userId: number) => {
+  recentlyDeregisteredUserId.value = userId;
+  setTimeout(() => {
+    recentlyDeregisteredUserId.value = null;
+  }, 2000);
+};
+
+const isRecentlyRegistered = (userId: number) => {
+  return recentlyRegisteredUserId.value === userId;
+};
+
 defineExpose({
-  setRecentlyRegistered: (userId: number) => {
-    recentlyRegistered.value = userId;
-  }
+  setRecentlyRegistered,
+  setRecentlyDeregistered
 });
+
+// Обработчик открытия модального окна оплаты
+const handlePayment = (user: User) => {
+  selectedUserForPayment.value = user;
+  isPaymentModalOpen.value = true;
+};
+
+// Обработчик закрытия модального окна оплаты
+const handleClosePaymentModal = () => {
+  isPaymentModalOpen.value = false;
+  selectedUserForPayment.value = null;
+};
+
+// Обработчик отправки формы оплаты
+const handleSubmitPayment = (payment: Payment) => {
+  emit('payment', payment);
+  handleClosePaymentModal();
+};
+
+const isRecentlyDeregistered = (userId: number) => {
+  return recentlyDeregisteredUserId.value === userId;
+};
 </script>
 
 <template>
@@ -305,7 +354,12 @@ defineExpose({
                 Пользователи не найдены
               </td>
             </tr>
-            <tr v-for="user in users" :key="user.id" :class="getRowClasses(user)">
+            <tr v-for="user in users" :key="user.id" :class="{
+              'transition-colors duration-1000': true,
+              'bg-green-100': user.isRegistered && !isRecentlyRegistered(user.id) && !isRecentlyDeregistered(user.id),
+              'bg-green-300': isRecentlyRegistered(user.id),
+              'bg-white': isRecentlyDeregistered(user.id) || (!user.isRegistered && !isRecentlyRegistered(user.id))
+            }">
               <td class="px-6 py-2.5 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">{{ user.fullName }}</div>
                 <div v-if="user.spiritualName" class="text-sm text-gray-500">{{ user.spiritualName }}</div>
@@ -338,6 +392,14 @@ defineExpose({
               </td>
               <td class="px-6 py-2.5 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex items-center justify-end">
+                  <button
+                    v-if="showPaymentButton && user.isRegistered"
+                    @click="handlePayment(user)"
+                    class="text-green-600 hover:text-green-900 mr-3"
+                    title="Принять оплату"
+                  >
+                    <Icon name="mdi:currency-usd" class="w-5 h-5" />
+                  </button>
                   <button
                     v-if="showRegistrationButton"
                     @click="handleRegister(user)"
@@ -438,6 +500,17 @@ defineExpose({
       cancel-text="Отмена"
       @confirm="confirmDelete"
       @cancel="cancelDelete"
+    />
+
+    <!-- Модальное окно оплаты -->
+    <PaymentReceiptModal
+      v-if="selectedUserForPayment"
+      :is-open="isPaymentModalOpen"
+      :user="selectedUserForPayment"
+      :current-festival="currentFestival"
+      :current-admin="currentAdmin"
+      @close="handleClosePaymentModal"
+      @submit="handleSubmitPayment"
     />
   </div>
 </template> 

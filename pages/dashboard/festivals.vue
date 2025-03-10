@@ -37,6 +37,8 @@ const showSuccessModal = ref(false);
 const showViewModal = ref(false);
 const currentFestival = ref<Festival | null>(null);
 const selectedDepartments = ref<FestivalDepartment[]>([]);
+const userRegistration = ref<any>(null);
+const isRegistered = computed(() => !!userRegistration.value);
 
 // Загрузка данных фестивалей
 const { data: festivalsData, pending: festivalsLoading } = await useFetch('/api/festivals', {
@@ -58,12 +60,25 @@ watch(festivalsLoading, (loading) => {
 }, { immediate: true });
 
 // Обработчик нажатия на кнопку "Участвовать"
-const handleParticipate = (id: number) => {
+const handleParticipate = async (id: number) => {
   const festival = festivals.value.find(f => f.id === id);
   if (festival) {
     console.log('Selected festival for registration:', festival);
     console.log('Festival departments:', festival.Departments || festival.departments);
     currentFestival.value = festival;
+    
+    // Проверяем, есть ли у пользователя регистрация на этот фестиваль
+    isLoading.value = true;
+    try {
+      const { data } = await useFetch(`/api/festivals/${id}/registration`);
+      userRegistration.value = data.value?.registration || null;
+    } catch (error) {
+      console.error('Ошибка при проверке регистрации:', error);
+      userRegistration.value = null;
+    } finally {
+      isLoading.value = false;
+    }
+    
     showRegistrationForm.value = true;
   }
 };
@@ -87,8 +102,14 @@ const handleCloseRegistrationForm = () => {
 const handleSubmitRegistration = async (formData: FestivalRegistrationFormData) => {
   isLoading.value = true;
   try {
-    const response = await $fetch('/api/festivals/register', {
-      method: 'POST',
+    const endpoint = isRegistered.value 
+      ? `/api/festivals/${currentFestival.value?.id}/registration` 
+      : '/api/festivals/register';
+    
+    const method = isRegistered.value ? 'PUT' : 'POST';
+    
+    const response = await $fetch(endpoint, {
+      method,
       body: {
         ...formData,
         festivalId: currentFestival.value?.id
@@ -162,7 +183,7 @@ const handleCloseViewModal = () => {
       
       <!-- Прошедшие фестивали -->
       <div v-if="pastFestivals.length > 0">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">Прошедшие и планируемые фестивали</h2>
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Прошедшие фестивали</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <FestivalCard 
             v-for="festival in pastFestivals" 
@@ -184,6 +205,9 @@ const handleCloseViewModal = () => {
     >
       <FestivalRegistrationForm 
         :festival="currentFestival"
+        :initial-data="userRegistration"
+        :is-registered="isRegistered"
+        :show-festival-info="true"
         @close="handleCloseRegistrationForm"
         @submit="handleSubmitRegistration"
       />
