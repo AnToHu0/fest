@@ -1,7 +1,7 @@
-import { useAuth } from '#imports'
-
 export function useRoles() {
   const { data } = useAuth()
+  
+  const currentUser = data.value?.user
 
   const hasRole = (role: string): boolean => {
     const roles = (data.value?.user as any)?.roles || []
@@ -19,6 +19,7 @@ export function useRoles() {
   return {
     hasRole,
     hasAnyRole,
-    hasAllRoles
+    hasAllRoles,
+    currentUser
   }
 } 

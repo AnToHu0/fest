@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { User } from '~/types/user';
 import type { FestivalRegistrationFormData } from '~/types/registration';
+import type { Payment } from '~/types/payment';
+import type { Festival } from '~/types/festival';
 import BaseUsersTable from '~/components/admin/BaseUsersTable.vue';
 import AdminFestivalRegistrationModal from '~/components/admin/AdminFestivalRegistrationModal.vue';
 
@@ -10,6 +12,19 @@ definePageMeta({
 });
 
 const { hasRole, currentUser } = useRoles();
+
+// Получаем данные текущего пользователя напрямую
+const { data: authData } = useAuth();
+const currentUserData = computed(() => {
+  const user = authData.value?.user;
+  if (user) {
+    return {
+      id: user.id || authData.value?.userId,
+      ...user
+    };
+  }
+  return null;
+});
 
 // Проверяем, есть ли у пользователя роль admin или registrar
 const canAccess = computed(() => hasRole('admin') || hasRole('registrar'));
@@ -209,18 +224,21 @@ onMounted(async () => {
 });
 
 // Обработчик создания платежа
-const handlePayment = async (userId: number) => {
-  try {
-    // Логика создания платежа
-    // ...
+const handlePayment = async (payment: Payment) => {
+  try {    
+    // Отправляем запрос на создание платежа
+    const response = await $fetch('/api/admin/payments/create', {
+      method: 'POST',
+      body: payment
+    });
     
-    // Обновляем данные после успешного создания платежа
-    await refreshData();
-    // Вместо showSuccessNotification используем alert
-    alert('Оплата успешно принята');
+    if (response.success) {
+      // Обновляем данные после успешного создания платежа
+      await refreshData();
+    } else {
+      throw new Error(response.message || 'Ошибка при создании платежа');
+    }
   } catch (error) {
-    console.error('Ошибка при создании платежа:', error);
-    // Вместо showErrorNotification используем alert
     alert('Ошибка при создании платежа');
   }
 };
@@ -247,7 +265,10 @@ const handlePayment = async (userId: number) => {
       :allow-role-management="false"
       :show-add-button="false"
       :current-festival="currentFestival"
-      :current-admin="currentUser"
+      :current-admin="{
+        id: currentUserData.value?.id || authData.value?.userId,
+        fullName: currentUserData.value?.fullName || 'Администратор'
+      }"
       :show-registration-filter="true"
       :highlight-registered="true"
       @update:page="handlePageChange"

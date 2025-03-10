@@ -5,6 +5,7 @@ import type { Festival } from '~/types/festival';
 import type { Payment } from '~/types/payment';
 import type { FestivalRegistration } from '~/types/registration';
 import Modal from '~/components/ui/Modal.vue';
+import { Icon } from '@iconify/vue';
 
 interface Props {
   isOpen: boolean;
@@ -48,21 +49,17 @@ const loadUserPayments = async () => {
   }
   
   try {
-    console.log('Загружаем платежи для пользователя:', props.user.id, 'фестиваль:', props.currentFestival.id);
     const response = await $fetch<{ success: boolean; payments: Payment[] }>(`/api/admin/payments/user/${props.user.id}`, {
       params: {
         festivalId: props.currentFestival.id
       }
     });
-    console.log('Ответ от сервера:', response);
     if (response.success) {
       userPayments.value = response.payments;
-      console.log('Загруженные платежи:', userPayments.value);
     } else {
       error.value = 'Не удалось загрузить платежи';
     }
   } catch (err: any) {
-    console.error('Ошибка при загрузке платежей:', err);
     error.value = err.message || 'Произошла ошибка при загрузке платежей';
   } finally {
     isLoading.value = false;
@@ -75,23 +72,17 @@ const loadingRegistration = ref(true);
 
 const loadRegistration = async () => {
   if (!props.user?.id || !props.currentFestival?.id) {
-    console.log('Отсутствуют данные пользователя или фестиваля для загрузки регистрации');
     loadingRegistration.value = false;
     return;
   }
 
   try {
-    console.log('Загружаем регистрацию для пользователя:', props.user.id, 'фестиваль:', props.currentFestival.id);
     const response = await $fetch<{ success: boolean; registration: FestRegistration }>(`/api/admin/registration/${props.user.id}`);
-    console.log('Ответ от сервера (регистрация):', response);
     if (response.success) {
       registration.value = response.registration;
-      console.log('Загруженная регистрация:', registration.value);
-      console.log('hasCar:', registration.value?.hasCar);
-      console.log('hasPet:', registration.value?.hasPet);
     }
   } catch (err) {
-    console.error('Ошибка при загрузке регистрации:', err);
+    // Ошибка обрабатывается тихо
   } finally {
     loadingRegistration.value = false;
   }
@@ -119,27 +110,26 @@ const paymentSums = computed(() => {
 
 // Вычисляем доступные категории платежей
 const availablePaymentDests = computed(() => {
-  console.log('Вычисление доступных платежей. Регистрация:', registration.value);
-  console.log('hasCar:', registration.value?.hasCar, 'hasPet:', registration.value?.hasPet);
-  
   const dests = [
     { id: 'Участие', label: 'Оплата за участие' },
     { id: 'Проживание', label: 'Оплата за проживание' }
   ];
 
   if (registration.value?.hasCar) {
-    console.log('Добавляем опцию оплаты за автомобиль');
     dests.push({ id: 'Автомобиль', label: 'Оплата за автомобиль' });
   }
 
   if (registration.value?.hasPet) {
-    console.log('Добавляем опцию оплаты за животное');
     dests.push({ id: 'Животное', label: 'Оплата за животное' });
   }
 
-  console.log('Итоговый список доступных платежей:', dests);
   return dests;
 });
+
+// Состояние для уведомления
+const showSuccessMessage = ref(false);
+const successMessage = ref('');
+const isClosing = ref(false);
 
 // Обновляем handleSubmit для добавления festivalId
 const handleSubmit = () => {
@@ -183,7 +173,6 @@ watch(() => props.isOpen, (newValue) => {
 // Также загружаем данные при монтировании, если окно открыто
 onMounted(() => {
   if (props.isOpen) {
-    console.log('Компонент смонтирован, окно открыто - загружаем данные');
     loadUserPayments();
     loadRegistration();
   }
@@ -197,6 +186,101 @@ onUnmounted(() => {
   isLoading.value = true;
   loadingRegistration.value = true;
 });
+
+const handleSubmitOnly = async () => {
+  const { data: authData } = useAuth();
+  const currentUserId = authData.value?.user?.id;
+  
+  let adminId = props.currentAdmin?.id || currentUserId;
+  
+  if (!adminId) {
+    adminId = 1;
+  }
+  
+  if (!props.currentFestival?.id) {
+    return;
+  }
+  
+  const payment: Payment = {
+    customerId: props.user.id,
+    adminId: adminId,
+    festivalId: props.currentFestival.id,
+    amount: Number(paymentForm.value.amount),
+    paymentType: paymentForm.value.paymentType,
+    paymentDest: paymentForm.value.paymentDest,
+    date: new Date().toISOString()
+  };
+  
+  try {
+    const response = await $fetch('/api/admin/payments/create', {
+      method: 'POST',
+      body: payment
+    });
+    
+    if (response.success) {
+      // Сбрасываем форму на дефолтные значения
+      paymentForm.value = {
+        amount: '',
+        paymentType: 'Наличные менеджеру',
+        paymentDest: 'Участие',
+        comment: ''
+      };
+      
+      // Обновляем платежи после успешной отправки
+      await loadUserPayments();
+      
+      // Показываем уведомление об успешном платеже
+      isClosing.value = false;
+      successMessage.value = 'Оплата успешно принята';
+      showSuccessMessage.value = true;
+      
+      // Начинаем анимацию затухания через 2 секунды
+      setTimeout(() => {
+        isClosing.value = true;
+        // Скрываем уведомление после завершения анимации
+        setTimeout(() => {
+          showSuccessMessage.value = false;
+          isClosing.value = false;
+        }, 1000);
+      }, 2000);
+    } else {
+      // Показываем уведомление об ошибке
+      isClosing.value = false;
+      successMessage.value = 'Ошибка при создании платежа: ' + response.message;
+      showSuccessMessage.value = true;
+      
+      // Начинаем анимацию затухания через 2 секунды
+      setTimeout(() => {
+        isClosing.value = true;
+        // Скрываем уведомление после завершения анимации
+        setTimeout(() => {
+          showSuccessMessage.value = false;
+          isClosing.value = false;
+        }, 1000);
+      }, 2000);
+    }
+  } catch (error) {
+    // Показываем уведомление об ошибке
+    isClosing.value = false;
+    successMessage.value = 'Ошибка при отправке запроса';
+    showSuccessMessage.value = true;
+    
+    // Начинаем анимацию затухания через 2 секунды
+    setTimeout(() => {
+      isClosing.value = true;
+      // Скрываем уведомление после завершения анимации
+      setTimeout(() => {
+        showSuccessMessage.value = false;
+        isClosing.value = false;
+      }, 1000);
+    }, 2000);
+  }
+};
+
+const handleSubmitAndClose = async () => {
+  await handleSubmitOnly();
+  handleClose();
+};
 </script>
 
 <template>
@@ -313,22 +397,48 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Кнопки -->
-      <div class="flex justify-end space-x-3">
-        <button
-          type="button"
-          class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          @click="handleClose"
+      <!-- Кнопки и уведомление -->
+      <div class="flex items-center justify-between">
+        <!-- Уведомление -->
+        <div
+          v-if="showSuccessMessage"
+          class="text-green-700 text-xs flex items-center max-w-[200px]"
+          :class="{ 
+            'opacity-100 transition-opacity duration-[2000ms]': showSuccessMessage && !isClosing,
+            'opacity-0 transition-opacity duration-[1000ms]': isClosing 
+          }"
         >
-          Отмена
-        </button>
-        <button
-          type="submit"
-          :disabled="!isFormValid"
-          class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Принять оплату
-        </button>
+          <Icon name="mdi:check-circle" class="w-4 h-4 mr-1 flex-shrink-0" />
+          {{ successMessage }}
+        </div>
+        <div v-else class="flex-grow"></div>
+
+        <!-- Кнопки -->
+        <div class="flex space-x-3">
+          <button
+            type="button"
+            class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            @click="handleClose"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            :disabled="!isFormValid"
+            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="handleSubmitOnly"
+          >
+            Оплатить
+          </button>
+          <button
+            type="button"
+            :disabled="!isFormValid"
+            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="handleSubmitAndClose"
+          >
+            Оплатить и закрыть
+          </button>
+        </div>
       </div>
     </form>
   </Modal>
