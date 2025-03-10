@@ -104,19 +104,24 @@ const menuItems = computed((): MenuItem[] => {
     );
   }
 
+  if (hasRole('admin') || hasRole('accommodation_manager')) {
+    items.push(
+      {
+        path: '/dashboard/admin/accommodation',
+        label: 'Размещение',
+        icon: 'mdi:bed',
+        roles: ['admin', 'accommodation_manager'],
+        type: 'link'
+      }
+    );
+  }
+
   if (hasRole('admin')) {
     items.push(
       {
         path: '/dashboard/admin/payments',
         label: 'Платежи',
         icon: 'mdi:currency-usd',
-        roles: ['admin'],
-        type: 'link'
-      },
-      {
-        path: '/dashboard/admin/accommodation',
-        label: 'Размещение',
-        icon: 'mdi:bed',
         roles: ['admin'],
         type: 'link'
       },
