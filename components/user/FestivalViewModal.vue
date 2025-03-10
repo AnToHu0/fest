@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Festival, FestivalDepartment } from '~/types/festival';
 import type { FestivalRegistration } from '~/types/registration';
-import { ref, onMounted } from 'vue';
+import type { Payment } from '~/types/payment';
+import { ref, onMounted, computed } from 'vue';
 
 const props = defineProps<{
   festival: Festival;
@@ -14,6 +15,9 @@ const emit = defineEmits<{
 const isLoading = ref(false);
 const registration = ref<FestivalRegistration | null>(null);
 const departments = ref<FestivalDepartment[]>([]);
+const payments = ref<Payment[]>([]);
+const isLoadingPayments = ref(false);
+const showPaymentHistory = ref(false);
 
 // Загрузка данных о регистрации пользователя
 const fetchRegistrationData = async () => {
@@ -38,6 +42,47 @@ const fetchRegistrationData = async () => {
   }
 };
 
+// Загрузка платежей пользователя
+const fetchPayments = async () => {
+  if (!props.festival?.id) return;
+  
+  isLoadingPayments.value = true;
+  try {
+    const response = await $fetch<{ success: boolean; payments: Payment[] }>(`/api/festivals/${props.festival.id}/payments`);
+    if (response.success) {
+      payments.value = response.payments;
+    }
+  } catch (error) {
+    console.error('Ошибка при загрузке платежей:', error);
+    payments.value = [];
+  } finally {
+    isLoadingPayments.value = false;
+  }
+};
+
+// Вычисляем суммы по категориям
+const paymentSums = computed(() => {
+  const sums = {
+    Участие: 0,
+    Проживание: 0,
+    Автомобиль: 0,
+    Животное: 0
+  };
+
+  payments.value.forEach(payment => {
+    if (payment.paymentDest in sums) {
+      sums[payment.paymentDest] += payment.amount;
+    }
+  });
+
+  return sums;
+});
+
+// Вычисляем общую сумму платежей
+const totalPayment = computed(() => {
+  return Object.values(paymentSums.value).reduce((sum, current) => sum + current, 0);
+});
+
 // Форматирование даты
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -51,6 +96,7 @@ const formatDate = (dateString: string) => {
 // Загружаем данные при создании компонента
 onMounted(() => {
   fetchRegistrationData();
+  fetchPayments();
 });
 </script>
 
@@ -146,11 +192,83 @@ onMounted(() => {
         </div>
       </div>
       
-      <!-- Раздел с оплатами (заглушка) -->
+      <!-- Раздел с оплатами -->
       <div class="mb-6">
         <h3 class="text-lg font-medium text-gray-800 mb-3">Оплаты</h3>
-        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-          <p class="text-gray-500">Информация об оплатах будет доступна позднее</p>
+        
+        <div v-if="isLoadingPayments" class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+          <div class="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+          <span class="text-gray-500">Загрузка платежей...</span>
+        </div>
+
+        <div v-else-if="payments.length === 0" class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+          <p class="text-gray-500">Платежи пока не внесены</p>
+        </div>
+
+        <div v-else class="bg-white border border-gray-200 rounded-lg p-4">
+          <!-- Суммы по категориям -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span class="text-sm text-gray-600">За участие:</span>
+              <span class="font-medium">{{ paymentSums.Участие }} ₽</span>
+            </div>
+            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span class="text-sm text-gray-600">За проживание:</span>
+              <span class="font-medium">{{ paymentSums.Проживание }} ₽</span>
+            </div>
+            <div v-if="registration?.hasCar" class="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span class="text-sm text-gray-600">За автомобиль:</span>
+              <span class="font-medium">{{ paymentSums.Автомобиль }} ₽</span>
+            </div>
+            <div v-if="registration?.hasPet" class="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span class="text-sm text-gray-600">За животное:</span>
+              <span class="font-medium">{{ paymentSums.Животное }} ₽</span>
+            </div>
+          </div>
+
+          <!-- Общая сумма -->
+          <div class="border-t border-gray-100 pt-4">
+            <div class="flex justify-between items-center p-2 bg-blue-50 rounded">
+              <span class="text-sm font-medium text-blue-700">Общая сумма оплат:</span>
+              <span class="font-bold text-blue-700">{{ totalPayment }} ₽</span>
+            </div>
+          </div>
+
+          <!-- История платежей -->
+          <div class="mt-4">
+            <button 
+              @click="showPaymentHistory = !showPaymentHistory"
+              class="flex items-center text-sm font-medium text-gray-700 mb-2 hover:text-blue-600 transition-colors"
+            >
+              <Icon 
+                :name="showPaymentHistory ? 'mdi:chevron-down' : 'mdi:chevron-right'" 
+                class="w-5 h-5 mr-1"
+              />
+              История платежей
+            </button>
+            
+            <div v-show="showPaymentHistory" class="space-y-2">
+              <div 
+                v-for="payment in payments" 
+                :key="payment.id" 
+                class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm"
+              >
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2">
+                    <span class="text-gray-600">{{ formatDate(payment.date) }}</span>
+                    <span class="text-gray-400">·</span>
+                    <span>{{ payment.paymentDest }}</span>
+                    <span class="text-gray-400">·</span>
+                    <span class="text-gray-500">{{ payment.paymentType }}</span>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    Принял оплату: {{ payment.Registrator?.fullName || 'Система' }}
+                  </div>
+                </div>
+                <span class="font-medium">{{ payment.amount }} ₽</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
