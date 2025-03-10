@@ -108,6 +108,56 @@ const paymentSums = computed(() => {
   return sums;
 });
 
+// Вычисляем рекомендуемые суммы оплаты
+const recommendedPayments = computed(() => {
+  if (!registration.value || !props.currentFestival) return null;
+
+  const festival = props.currentFestival;
+  const reg = registration.value;
+
+  // Вычисляем количество дней
+  const arrival = new Date(reg.arrivalDate);
+  const departure = new Date(reg.departureDate);
+  const days = Math.ceil((departure.getTime() - arrival.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Базовая стоимость проживания для взрослого
+  let adultAccommodation = days * festival.adultPrice;
+
+  // Стоимость проживания для подростков и детей
+  let teenAccommodation = 0;
+  let childAccommodation = 0;
+
+  if (reg.children) {
+    reg.children.forEach(child => {
+      if (child.birthDate) {
+        const age = Math.floor((new Date().getTime() - new Date(child.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365));
+        if (age >= 12 && age < 18) {
+          teenAccommodation += days * festival.teenPrice;
+        } else if (age < 12) {
+          childAccommodation += days * festival.childPrice;
+        }
+      }
+    });
+  }
+
+  // Дополнительные услуги
+  const carPrice = reg.hasCar ? festival.carPrice : 0;
+  const petPrice = reg.hasPet ? festival.petPrice : 0;
+
+  // Общая сумма
+  const total = adultAccommodation + teenAccommodation + childAccommodation + carPrice + petPrice;
+
+  return {
+    adultAccommodation,
+    teenAccommodation,
+    childAccommodation,
+    carPrice,
+    petPrice,
+    days,
+    total
+  };
+});
+
 // Вычисляем доступные категории платежей
 const availablePaymentDests = computed(() => {
   const dests = [
@@ -281,6 +331,20 @@ const handleSubmitAndClose = async () => {
   await handleSubmitOnly();
   handleClose();
 };
+
+// Проверяем достаточность платежей
+const paymentsStatus = computed(() => {
+  if (!recommendedPayments.value) return {};
+
+  return {
+    Проживание: paymentSums.value.Проживание >= 
+      (recommendedPayments.value.adultAccommodation + 
+       recommendedPayments.value.teenAccommodation + 
+       recommendedPayments.value.childAccommodation),
+    Автомобиль: paymentSums.value.Автомобиль >= recommendedPayments.value.carPrice,
+    Животное: paymentSums.value.Животное >= recommendedPayments.value.petPrice
+  };
+});
 </script>
 
 <template>
@@ -305,19 +369,72 @@ const handleSubmitAndClose = async () => {
             <span class="text-sm text-gray-600">За участие:</span>
             <span class="text-sm font-medium">{{ paymentSums.Участие }} ₽</span>
           </div>
-          <div class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
-            <span class="text-sm text-gray-600">За проживание:</span>
-            <span class="text-sm font-medium">{{ paymentSums.Проживание }} ₽</span>
+          <div class="flex justify-between items-center p-2 rounded shadow-sm"
+            :class="{
+              'bg-white': !paymentsStatus.Проживание,
+              'bg-green-50 border border-green-200': paymentsStatus.Проживание
+            }"
+          >
+            <span class="text-sm" :class="paymentsStatus.Проживание ? 'text-green-700' : 'text-gray-600'">За проживание:</span>
+            <span class="text-sm font-medium" :class="paymentsStatus.Проживание ? 'text-green-700' : ''">{{ paymentSums.Проживание }} ₽</span>
           </div>
           <!-- Условные категории -->
-          <div v-if="registration?.hasCar" class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
-            <span class="text-sm text-gray-600">За автомобиль:</span>
-            <span class="text-sm font-medium">{{ paymentSums.Автомобиль }} ₽</span>
+          <div v-if="registration?.hasCar" 
+            class="flex justify-between items-center p-2 rounded shadow-sm"
+            :class="{
+              'bg-white': !paymentsStatus.Автомобиль,
+              'bg-green-50 border border-green-200': paymentsStatus.Автомобиль
+            }"
+          >
+            <span class="text-sm" :class="paymentsStatus.Автомобиль ? 'text-green-700' : 'text-gray-600'">За автомобиль:</span>
+            <span class="text-sm font-medium" :class="paymentsStatus.Автомобиль ? 'text-green-700' : ''">{{ paymentSums.Автомобиль }} ₽</span>
           </div>
-          <div v-if="registration?.hasPet" class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
-            <span class="text-sm text-gray-600">За животное:</span>
-            <span class="text-sm font-medium">{{ paymentSums.Животное }} ₽</span>
+          <div v-if="registration?.hasPet" 
+            class="flex justify-between items-center p-2 rounded shadow-sm"
+            :class="{
+              'bg-white': !paymentsStatus.Животное,
+              'bg-green-50 border border-green-200': paymentsStatus.Животное
+            }"
+          >
+            <span class="text-sm" :class="paymentsStatus.Животное ? 'text-green-700' : 'text-gray-600'">За животное:</span>
+            <span class="text-sm font-medium" :class="paymentsStatus.Животное ? 'text-green-700' : ''">{{ paymentSums.Животное }} ₽</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Рекомендуемые платежи -->
+      <div v-if="recommendedPayments" class="bg-blue-50 p-4 rounded-lg space-y-2 mt-4">
+        <h3 class="text-sm font-medium text-blue-700 mb-2">Рекомендуемые суммы оплаты:</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
+            <span class="text-sm text-gray-600">Проживание (взрослый):</span>
+            <span class="text-sm font-medium">{{ recommendedPayments.adultAccommodation }} ₽</span>
+          </div>
+          <div v-if="recommendedPayments.teenAccommodation > 0" class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
+            <span class="text-sm text-gray-600">Проживание (12-18 лет):</span>
+            <span class="text-sm font-medium">{{ recommendedPayments.teenAccommodation }} ₽</span>
+          </div>
+          <div v-if="recommendedPayments.childAccommodation > 0" class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
+            <span class="text-sm text-gray-600">Проживание (до 12 лет):</span>
+            <span class="text-sm font-medium">{{ recommendedPayments.childAccommodation }} ₽</span>
+          </div>
+          <div v-if="recommendedPayments.carPrice > 0" class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
+            <span class="text-sm text-gray-600">Автомобиль:</span>
+            <span class="text-sm font-medium">{{ recommendedPayments.carPrice }} ₽</span>
+          </div>
+          <div v-if="recommendedPayments.petPrice > 0" class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
+            <span class="text-sm text-gray-600">Животное:</span>
+            <span class="text-sm font-medium">{{ recommendedPayments.petPrice }} ₽</span>
+          </div>
+        </div>
+        <div class="border-t border-blue-100 mt-4 pt-4">
+          <div class="flex justify-between items-center p-2 bg-white rounded shadow-sm">
+            <span class="text-sm font-medium text-blue-700">Итого рекомендуемый взнос:</span>
+            <span class="text-sm font-bold text-blue-700">{{ recommendedPayments.total }} ₽</span>
+          </div>
+        </div>
+        <div class="text-xs text-blue-600 mt-2">
+          * Расчет за {{ recommendedPayments.days }} дней пребывания
         </div>
       </div>
 
