@@ -1,4 +1,9 @@
 ---
+description: 
+globs: 
+alwaysApply: false
+---
+---
 description: Everything related to code
 globs: *.vue, *.ts
 alwaysApply: false
@@ -29,6 +34,7 @@ alwaysApply: false
       3. Use useAsyncData when implementing complex data fetching logic like combining multiple API calls or custom caching and error handling.
       4. Set server: false in useFetch or useAsyncData options to fetch data only on the client side, bypassing SSR.
       5. Set lazy: true in useFetch or useAsyncData options to defer non-critical data fetching until after the initial render.
+      6. We using sequelize for ORM.
 
       Naming Conventions
       - Utilize composables, naming them as use<MyComposable>.
@@ -41,6 +47,6 @@ alwaysApply: false
       - Use functional components with TypeScript interfaces.
 
       UI and Styling
-      - Use Nuxt UI and Tailwind CSS for components and styling.
+      - Use nuxt-icons for icons and Tailwind CSS for components and styling.
       - Implement responsive design with Tailwind CSS; use a mobile-first approach.
       
