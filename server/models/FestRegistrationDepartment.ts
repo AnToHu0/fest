@@ -21,7 +21,14 @@ export class FestRegistrationDepartment extends Model<FestRegistrationDepartment
   declare updatedAt?: Date;
 
   static associate(models: Models) {
-    // Связи не нужны, так как это промежуточная таблица
+    this.belongsTo(models.FestRegistration, { 
+      foreignKey: 'registrationId',
+      as: 'Registration'
+    });
+    this.belongsTo(models.FestDepartment, { 
+      foreignKey: 'departmentId',
+      as: 'Department'
+    });
   }
 }
 

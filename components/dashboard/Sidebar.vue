@@ -21,6 +21,20 @@ const isLoading = computed(() => status.value === 'loading');
 // Получаем данные пользователя
 const user = computed(() => session.value?.user as unknown as User);
 
+// Состояние для проверки наличия департаментов
+const hasDepartments = ref(false);
+
+// Проверяем, является ли пользователь администратором департаментов
+const checkDepartments = async () => {
+  try {
+    const response = await $fetch('/api/departments/my/users');
+    hasDepartments.value = response.departments.length > 0;
+  } catch (error) {
+    console.error('Ошибка при проверке департаментов:', error);
+    hasDepartments.value = false;
+  }
+};
+
 // Определяем пункты меню с иконками и правами доступа
 const menuItems = computed((): MenuItem[] => {
   const items: MenuItem[] = [
@@ -58,6 +72,19 @@ const menuItems = computed((): MenuItem[] => {
         type: 'link'
       }
     );
+
+    // Добавляем пункт меню "Мой департамент" если пользователь является администратором департамента
+    if (hasDepartments.value) {
+      items.push(
+        { 
+          path: '/dashboard/departments', 
+          label: 'Мой департамент',
+          icon: 'mdi:account-group',
+          roles: ['user'],
+          type: 'link'
+        }
+      );
+    }
   }
 
   // Добавляем пункты меню для администратора
@@ -149,6 +176,13 @@ const menuItems = computed((): MenuItem[] => {
 const handleSignOut = async () => {
   await signOut({ redirect: true, callbackUrl: '/' });
 };
+
+// Проверяем наличие департаментов при монтировании компонента
+onMounted(() => {
+  if (hasRole('user')) {
+    checkDepartments();
+  }
+});
 </script>
 
 <template>
