@@ -158,13 +158,6 @@ const menuItems = computed((): MenuItem[] => {
         icon: 'mdi:history',
         roles: ['admin'],
         type: 'link'
-      },
-      {
-        path: '/dashboard/admin/database',
-        label: 'База данных',
-        icon: 'mdi:database',
-        roles: ['admin'],
-        type: 'link'
       }
     );
   }
