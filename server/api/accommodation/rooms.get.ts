@@ -114,7 +114,7 @@ export default defineEventHandler(async (event) => {
           where: {
             id: { [Op.in]: userIds }
           },
-          attributes: ['id', 'fullName', 'email'],
+          attributes: ['id', 'fullName', 'email', 'spiritualName'],
           raw: true
         });
 

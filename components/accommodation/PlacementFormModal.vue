@@ -268,6 +268,29 @@ const loadUsers = async () => {
         }
       }
       
+      // Получаем список всех размещений, чтобы исключить уже размещенных пользователей
+      let placedUserIds: number[] = [];
+      try {
+        // Получаем все размещения
+        const placementsResponse = await $fetch('/api/accommodation/placements');
+        
+        if (placementsResponse.placements) {
+          // Если редактируем существующее размещение, исключаем текущего пользователя из списка размещенных
+          if (props.placement) {
+            placedUserIds = placementsResponse.placements
+              .filter((p: any) => p.userId !== props.placement?.userId)
+              .map((p: any) => p.userId);
+          } else {
+            placedUserIds = placementsResponse.placements.map((p: any) => p.userId);
+          }
+          console.log(`Получено ${placedUserIds.length} размещений`);
+        }
+      } catch (error) {
+        console.error('Ошибка при загрузке размещений:', error);
+        // В случае ошибки, считаем, что нет размещенных пользователей
+        placedUserIds = [];
+      }
+      
       // Фильтруем пользователей
       filteredUsers = usersResponse.users.filter(user => {
         // Проверяем, что пользователь не ребенок
@@ -304,7 +327,11 @@ const loadUsers = async () => {
           console.log(`Не удалось проверить регистрацию для пользователя ${user.id}: ${JSON.stringify({fullName: user.fullName, email: user.email})}`);
         }
         
-        return isNotChild && hasRegistration;
+        // Проверяем, что пользователь еще не размещен
+        // Если редактируем существующее размещение, разрешаем текущего пользователя
+        const isNotPlaced = !placedUserIds.includes(user.id);
+        
+        return isNotChild && hasRegistration && isNotPlaced;
       });
     } else {
       // Если нет активного фестиваля, просто фильтруем по возрасту
@@ -314,10 +341,29 @@ const loadUsers = async () => {
     
     users.value = filteredUsers;
     
-    console.log(`Загружено ${users.value.length} пользователей${activeFestival ? ', зарегистрированных на фестиваль' : ''}`);
+    console.log(`Загружено ${users.value.length} пользователей${activeFestival ? ', зарегистрированных на фестиваль и не размещенных' : ''}`);
     
     // Если редактируем существующее размещение, находим выбранного пользователя
     if (props.placement) {
+      // Если пользователь не найден в отфильтрованном списке (например, уже размещен),
+      // добавляем его в список, чтобы можно было редактировать
+      const userExists = users.value.some(u => u.id === props.placement?.userId);
+      
+      if (!userExists && props.placement?.userId) {
+        try {
+          // Получаем данные пользователя
+          const userResponse = await $fetch(`/api/admin/users/${props.placement.userId}`);
+          
+          if (userResponse.user) {
+            // Добавляем пользователя в список
+            users.value.push(userResponse.user);
+            console.log(`Добавлен пользователь ${userResponse.user.id} для редактирования размещения`);
+          }
+        } catch (error) {
+          console.error('Ошибка при загрузке данных пользователя:', error);
+        }
+      }
+      
       selectedUser.value = users.value.find(u => u.id === props.placement?.userId);
       if (selectedUser.value) {
         loadUserChildren(selectedUser.value.id);
@@ -509,8 +555,22 @@ const submitForm = async () => {
   }
   
   try {
+    // Создаем копию данных формы для отправки
+    const formDataToSubmit = { ...formData };
+    
+    // Проверяем, что даты в правильном формате
+    // Если даты уже в формате строки YYYY-MM-DD, оставляем как есть
+    // Если нет, преобразуем их
+    if (formDataToSubmit.datefrom && !(typeof formDataToSubmit.datefrom === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(formDataToSubmit.datefrom))) {
+      formDataToSubmit.datefrom = formatDateForInput(new Date(formDataToSubmit.datefrom));
+    }
+    
+    if (formDataToSubmit.dateto && !(typeof formDataToSubmit.dateto === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(formDataToSubmit.dateto))) {
+      formDataToSubmit.dateto = formatDateForInput(new Date(formDataToSubmit.dateto));
+    }
+    
     // Отправляем данные формы
-    await emit('submit', { ...formData });
+    await emit('submit', formDataToSubmit);
     
     // Создаем размещения для выбранных детей
     const selectedChildrenIds = Object.entries(selectedChildren)
@@ -523,9 +583,9 @@ const submitForm = async () => {
         if (child) {
           // Создаем данные для размещения ребенка
           const childFormData: PlacementFormData = {
-            ...formData,
+            ...formDataToSubmit,
             userId: child.id, // Используем ID ребенка как ID пользователя
-            comment: `Ребенок пользователя ${formData.userId}` // Не используем name и surname
+            comment: `Ребенок пользователя ${formDataToSubmit.userId}` // Не используем name и surname
           };
           
           try {
@@ -561,8 +621,16 @@ watch(() => props.placement, (newPlacement) => {
     formData.slot = newPlacement.slot;
     formData.userId = newPlacement.userId;
     formData.type = newPlacement.type;
-    formData.datefrom = newPlacement.datefrom;
-    formData.dateto = newPlacement.dateto;
+    
+    // Форматируем даты для input type="date"
+    if (newPlacement.datefrom) {
+      formData.datefrom = formatDateForInput(new Date(newPlacement.datefrom));
+    }
+    
+    if (newPlacement.dateto) {
+      formData.dateto = formatDateForInput(new Date(newPlacement.dateto));
+    }
+    
     formData.comment = newPlacement.comment;
     
     // Находим выбранного пользователя и загружаем его детей
@@ -588,9 +656,43 @@ watch(() => props.placement, (newPlacement) => {
 }, { immediate: true });
 
 // Загрузка пользователей при открытии модального окна
-watch(() => props.show, (newShow) => {
+watch(() => props.show, async (newShow) => {
   if (newShow) {
-    loadUsers();
+    // Загружаем пользователей
+    await loadUsers();
+    
+    // Если это новое размещение, устанавливаем даты фестиваля
+    if (!props.placement) {
+      try {
+        // Получаем текущий активный фестиваль
+        const festivalsResponse = await $fetch('/api/festivals/active');
+        if (festivalsResponse.festivals && festivalsResponse.festivals.length > 0) {
+          const activeFestival = festivalsResponse.festivals[0];
+          
+          // Устанавливаем даты фестиваля
+          formData.datefrom = formatDateForInput(new Date(activeFestival.startDate));
+          formData.dateto = formatDateForInput(new Date(activeFestival.endDate));
+          
+          console.log('Установлены даты фестиваля по умолчанию:', formData.datefrom, formData.dateto);
+        } else {
+          // Пробуем получить список всех фестивалей и найти активный
+          const allFestivalsResponse = await $fetch('/api/festivals');
+          if (allFestivalsResponse.festivals && allFestivalsResponse.festivals.length > 0) {
+            const festivals = allFestivalsResponse.festivals;
+            const activeFestival = festivals.find(f => f.isActive === true) || 
+                                 festivals.sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
+            
+            // Устанавливаем даты фестиваля
+            formData.datefrom = formatDateForInput(new Date(activeFestival.startDate));
+            formData.dateto = formatDateForInput(new Date(activeFestival.endDate));
+            
+            console.log('Установлены даты фестиваля по умолчанию:', formData.datefrom, formData.dateto);
+          }
+        }
+      } catch (error) {
+        console.error('Ошибка при загрузке дат фестиваля:', error);
+      }
+    }
   }
 }, { immediate: true });
 

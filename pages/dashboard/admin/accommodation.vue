@@ -147,7 +147,6 @@ const fetchRooms = async () => {
     
   } catch (error) {
     console.error('Ошибка при загрузке комнат:', error);
-    showErrorToast('Не удалось загрузить список комнат');
   } finally {
     loading.value = false;
   }
@@ -187,53 +186,96 @@ const handleDeletePlacement = async (placementId: number) => {
       method: 'DELETE',
     });
     
-    showSuccessToast('Размещение успешно удалено');
+    // Вместо полной перезагрузки данных, обновляем локальное состояние
+    // Удаляем размещение из всех комнат
+    rooms.value = rooms.value.map(room => {
+      if (room.placements && room.placements.length > 0) {
+        return {
+          ...room,
+          placements: room.placements.filter(p => p.id !== placementId)
+        };
+      }
+      return room;
+    });
     
-    // Обновляем список комнат
-    await fetchRooms();
+    console.log('Размещение успешно удалено');
   } catch (error) {
     console.error('Ошибка при удалении размещения:', error);
-    showErrorToast('Не удалось удалить размещение');
   }
 };
 
 // Обработчик отправки формы размещения
 const handleSubmitPlacement = async (formData: PlacementFormData) => {
   try {
+    let updatedPlacement;
+    
+    // Убедимся, что даты в правильном формате
+    const formattedData = {
+      ...formData,
+      // Если даты уже в формате строки, оставляем как есть
+      datefrom: formData.datefrom,
+      dateto: formData.dateto
+    };
+    
     if (currentPlacement.value) {
       // Обновление существующего размещения
-      await $fetch(`/api/accommodation/placements/${currentPlacement.value.id}`, {
+      const response = await $fetch(`/api/accommodation/placements/${currentPlacement.value.id}`, {
         method: 'PUT',
-        body: formData,
+        body: formattedData,
       });
-      showSuccessToast('Размещение успешно обновлено');
+      
+      // Получаем обновленное размещение из ответа API
+      updatedPlacement = response.placement;
+      
+      // Обновляем размещение в локальном состоянии
+      rooms.value = rooms.value.map(room => {
+        if (room.id === updatedPlacement.roomId && room.placements) {
+          return {
+            ...room,
+            placements: room.placements.map(p => 
+              p.id === updatedPlacement.id ? updatedPlacement : p
+            )
+          };
+        }
+        return room;
+      });
+      
+      console.log('Размещение успешно обновлено');
     } else {
       // Создание нового размещения
-      await $fetch('/api/accommodation/placements', {
+      const response = await $fetch('/api/accommodation/placements', {
         method: 'POST',
-        body: formData,
+        body: formattedData,
       });
-      showSuccessToast('Размещение успешно создано');
+      
+      // Получаем новое размещение из ответа API
+      updatedPlacement = response.placement;
+      
+      // Добавляем новое размещение в локальное состояние
+      rooms.value = rooms.value.map(room => {
+        if (room.id === updatedPlacement.roomId) {
+          // Создаем копию массива размещений или инициализируем новый массив
+          const placements = [...(room.placements || [])];
+          
+          // Добавляем новое размещение
+          placements.push(updatedPlacement);
+          
+          return {
+            ...room,
+            placements
+          };
+        }
+        return room;
+      });
+      
+      console.log('Размещение успешно создано');
     }
     
-    // Закрываем модальное окно и обновляем данные
+    // Закрываем модальное окно
     showPlacementModal.value = false;
-    await fetchRooms();
   } catch (error) {
     console.error('Ошибка при сохранении размещения:', error);
-    showErrorToast('Не удалось сохранить размещение');
   }
-};
-
-// Вспомогательные функции для уведомлений
-const showSuccessToast = (message: string) => {
-  // Здесь будет код для показа уведомления об успехе
-  console.log('Success:', message);
-};
-
-const showErrorToast = (message: string) => {
-  // Здесь будет код для показа уведомления об ошибке
-  console.error('Error:', message);
 };
 
 // Загрузка данных при монтировании компонента

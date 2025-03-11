@@ -84,12 +84,12 @@ export default defineEventHandler(async (event) => {
         {
           model: User,
           as: 'User',
-          attributes: ['id', 'fullName', 'email']
+          attributes: ['id', 'fullName', 'email', 'spiritualName']
         },
         {
           model: User,
           as: 'Manager',
-          attributes: ['id', 'fullName', 'email']
+          attributes: ['id', 'fullName', 'email', 'spiritualName']
         },
         {
           model: FestRoom,

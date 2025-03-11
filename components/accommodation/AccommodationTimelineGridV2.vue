@@ -73,7 +73,7 @@
                       v-if="isPlacementVisible(placement, index)"
                       :style="getPlacementStyle(placement, index)"
                       :status="placement.type || ''"
-                      :guest-name="placement.user?.fullName || 'Гость'"
+                      :guest-name="getUserFullName(placement)"
                       :start-date="formatDate(placement.datefrom || '')"
                       :end-date="formatDate(placement.dateto || '')"
                       @edit="$emit('edit-placement', placement)"
