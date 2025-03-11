@@ -104,6 +104,9 @@ const filteredRooms = computed(() => {
         // Проверяем email
         const email = placement.user.email ? placement.user.email.toLowerCase() : '';
         
+        // Проверяем searchField
+        const searchField = placement.user.searchField ? placement.user.searchField.toLowerCase() : '';
+        
         // Проверяем телефон (обрабатываем разные варианты доступа к полю)
         let phone = '';
         if (placement.user.phone) {
@@ -123,6 +126,7 @@ const filteredRooms = computed(() => {
         // Проверяем, содержит ли какое-либо из полей строку поиска
         return fullName.includes(searchLower) || 
                email.includes(searchLower) || 
+               searchField.includes(searchLower) ||
                (cleanPhone && cleanPhone.includes(cleanSearchPhone));
       });
     });

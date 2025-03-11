@@ -201,6 +201,20 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const totalPages = computed(() => Math.ceil(props.rooms.length / pageSize.value));
 
+// Загрузка размера страницы из localStorage при инициализации
+onMounted(() => {
+  const savedPageSize = localStorage.getItem('accommodationPageSize');
+  if (savedPageSize) {
+    pageSize.value = parseInt(savedPageSize);
+  }
+});
+
+// Сохранение размера страницы в localStorage при изменении
+watch(pageSize, (newValue) => {
+  localStorage.setItem('accommodationPageSize', newValue.toString());
+  currentPage.value = 1;
+});
+
 // Вычисляем комнаты для текущей страницы
 const paginatedRooms = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
@@ -220,11 +234,6 @@ const previousPage = () => {
     currentPage.value--;
   }
 };
-
-// При изменении размера страницы сбрасываем текущую страницу
-watch(pageSize, () => {
-  currentPage.value = 1;
-});
 
 // При изменении списка комнат (например, при фильтрации) сбрасываем на первую страницу
 watch(() => props.rooms, () => {

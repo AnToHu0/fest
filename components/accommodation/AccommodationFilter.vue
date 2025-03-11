@@ -55,12 +55,12 @@
 
       <!-- Поиск по имени/email/телефону -->
       <div class="md:col-span-2 relative">
-        <label class="block text-sm font-medium text-gray-700">Поиск по ФИО/Email/Телефону</label>
+        <label class="block text-sm font-medium text-gray-700">Поиск по ФИО или телефону</label>
         <div class="relative">
           <input 
             v-model="filters.searchUser" 
             type="text" 
-            placeholder="Введите ФИО, email или телефон"
+            placeholder="Введите ФИО или телефон"
             class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-colors pr-10"
           />
           <div v-if="filters.searchUser" class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer text-gray-400 hover:text-gray-600" @click="clearSearch">
