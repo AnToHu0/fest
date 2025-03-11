@@ -182,8 +182,6 @@ const handleEditPlacement = (placement: Placement) => {
 
 // Обработчик удаления размещения
 const handleDeletePlacement = async (placementId: number) => {
-  if (!confirm('Вы уверены, что хотите удалить это размещение?')) return;
-
   try {
     await $fetch(`/api/accommodation/placements/${placementId}`, {
       method: 'DELETE',

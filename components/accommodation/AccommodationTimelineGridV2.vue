@@ -88,40 +88,71 @@
       </div>
 
       <!-- Пагинация -->
-      <div class="mt-4 flex justify-between items-center">
-        <div class="text-sm text-gray-600">
-          Показано {{ paginatedRooms.length ? (currentPage - 1) * pageSize + 1 : 0 }} - {{ Math.min(currentPage * pageSize, rooms.length) }} из {{ rooms.length }} комнат
-        </div>
-        <div class="flex space-x-2">
-          <button 
-            @click="previousPage" 
-            :disabled="currentPage === 1"
-            class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Назад
-          </button>
-          <span class="flex items-center px-2">
-            Страница {{ currentPage }} из {{ totalPages }}
-          </span>
-          <button 
-            @click="nextPage" 
-            :disabled="currentPage === totalPages"
-            class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Вперед
-          </button>
-        </div>
-        <div class="flex items-center space-x-2">
-          <label class="text-sm text-gray-600">Комнат на странице:</label>
-          <select 
-            v-model="pageSize" 
-            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-          >
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-            <option :value="50">50</option>
-          </select>
+      <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div class="flex items-center space-x-4 w-full sm:w-auto">
+            <div class="text-sm text-gray-700">
+              Показано {{ paginatedRooms.length ? (currentPage - 1) * pageSize + 1 : 0 }} - 
+              {{ Math.min(currentPage * pageSize, rooms.length) }}
+              из {{ rooms.length }} комнат
+            </div>
+          </div>
+          
+          <div class="flex space-x-2 overflow-x-auto py-1 w-full sm:w-auto justify-center">
+            <button
+              @click="previousPage"
+              :disabled="currentPage === 1"
+              class="px-3 py-1 rounded-md text-sm bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Назад
+            </button>
+            
+            <!-- Страницы пагинации -->
+            <template v-for="(page, index) in paginationPages" :key="index">
+              <!-- Многоточие -->
+              <span 
+                v-if="page === 'start-ellipsis' || page === 'end-ellipsis'" 
+                class="px-2 py-1 text-gray-500 ellipsis"
+              >
+                ...
+              </span>
+              
+              <!-- Кнопка страницы -->
+              <button
+                v-else
+                @click="handlePageChange(page)"
+                :class="[
+                  'px-3 py-1 rounded-md text-sm',
+                  page === currentPage
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                ]"
+              >
+                {{ page }}
+              </button>
+            </template>
+            
+            <button
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="px-3 py-1 rounded-md text-sm bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Вперед
+            </button>
+          </div>
+          
+          <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+            <span class="text-sm text-gray-700">Показывать:</span>
+            <select
+              v-model="pageSize"
+              class="border border-gray-300 rounded-md text-sm py-1 px-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option :value="5">5</option>
+              <option :value="10">10</option>
+              <option :value="20">20</option>
+              <option :value="50">50</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -528,6 +559,64 @@ const isCurrentDate = (date: Date) => {
          date.getMonth() === today.getMonth() &&
          date.getFullYear() === today.getFullYear();
 };
+
+// Обработка изменения страницы
+const handlePageChange = (newPage: number) => {
+  currentPage.value = newPage;
+};
+
+// Вычисляемое свойство для получения массива номеров страниц для пагинации
+const paginationPages = computed(() => {
+  const pages = [];
+  
+  // Всегда добавляем первую страницу
+  if (totalPages.value > 0) {
+    pages.push(1);
+  }
+  
+  // Добавляем средние страницы
+  if (totalPages.value <= 7) {
+    // Если страниц мало, показываем все
+    for (let i = 2; i < totalPages.value; i++) {
+      pages.push(i);
+    }
+  } else {
+    // Если страниц много, показываем только нужные
+    let startPage = Math.max(2, currentPage.value - 1);
+    let endPage = Math.min(totalPages.value - 1, currentPage.value + 1);
+    
+    // Особые случаи для начала и конца
+    if (currentPage.value <= 3) {
+      startPage = 2;
+      endPage = 5;
+    } else if (currentPage.value >= totalPages.value - 2) {
+      startPage = totalPages.value - 4;
+      endPage = totalPages.value - 1;
+    }
+    
+    // Добавляем многоточие в начале, если нужно
+    if (startPage > 2) {
+      pages.push('start-ellipsis');
+    }
+    
+    // Добавляем средние страницы
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    // Добавляем многоточие в конце, если нужно
+    if (endPage < totalPages.value - 1) {
+      pages.push('end-ellipsis');
+    }
+  }
+  
+  // Всегда добавляем последнюю страницу, если она не совпадает с первой
+  if (totalPages.value > 1) {
+    pages.push(totalPages.value);
+  }
+  
+  return pages;
+});
 </script>
 
 <style scoped>
@@ -647,23 +736,61 @@ const isCurrentDate = (date: Date) => {
 }
 
 /* Улучшаем отображение кнопок пагинации */
-.mt-4 button {
-  transition: all 0.3s ease;
+button {
+  transition: all 0.2s ease;
 }
 
-.mt-4 button:not(:disabled):hover {
-  background-color: #f3f4f7;
+button:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
+/* Специальные стили для кнопок пагинации */
+.flex.space-x-2 button:not(:disabled):hover {
+  background-color: #f3f4f6;
+  border-color: #6b7280;
+}
+
+/* Стили для активной кнопки пагинации */
+.flex.space-x-2 button.bg-blue-600 {
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.flex.space-x-2 button.bg-blue-600:hover {
+  background-color: #2563eb !important;
+  transform: none;
+}
+
 /* Улучшаем отображение селекта пагинации */
+select {
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+select:hover {
+  border-color: #a5b4fc;
+}
+
+/* Удаляем дублирующиеся стили */
+.mt-4 button,
 .mt-4 select {
-  transition: all 0.3s ease;
+  transition: none;
+}
+
+.mt-4 button:not(:disabled):hover {
+  background-color: inherit;
+  transform: none;
+  box-shadow: none;
 }
 
 .mt-4 select:hover {
-  border-color: #a5b4fc;
+  border-color: inherit;
 }
 
 .add-icon {
@@ -675,5 +802,41 @@ const isCurrentDate = (date: Date) => {
   max-width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
+}
+
+/* Стили для многоточия в пагинации */
+.ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* Адаптивные стили для пагинации */
+@media (max-width: 640px) {
+  .flex.flex-col.sm\:flex-row {
+    gap: 1rem;
+  }
+  
+  .flex.space-x-2.overflow-x-auto {
+    padding-bottom: 0.5rem;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .flex.space-x-2.overflow-x-auto::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .flex.space-x-2.overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  .flex.space-x-2.overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #a5b4fc;
+    border-radius: 10px;
+  }
 }
 </style> 

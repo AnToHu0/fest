@@ -1,33 +1,36 @@
 <template>
-  <div 
-    :style="style"
-    :class="['placement-card', status]"
-    @click.stop="$emit('edit')"
-  >
-    <div class="placement-info">
-      <div class="placement-status">
-        <span v-if="status === 'booked'" class="status-icon">🔒</span>
-        <span v-else-if="status === 'paid'" class="status-icon">💰</span>
-        <span v-else-if="status === 'settled'" class="status-icon">✓</span>
-        <span v-else-if="status === 'special'" class="status-icon">⭐</span>
-      </div>
-      <div class="guest-name">{{ guestName }}</div>
-      <div class="placement-dates">{{ startDate }} - {{ endDate }}</div>
-    </div>
-    <button 
-      @click.stop="showDeleteConfirm = true" 
-      class="delete-btn"
+  <div>
+    <div 
+      :style="style"
+      :class="['placement-card', status]"
+      @click.stop="$emit('edit')"
     >
-      <Icon name="mdi:close" class="w-4 h-4" />
-    </button>
+      <div class="placement-info">
+        <div class="placement-status">
+          <span v-if="status === 'booked'" class="status-icon">🔒</span>
+          <span v-else-if="status === 'paid'" class="status-icon">💰</span>
+          <span v-else-if="status === 'settled'" class="status-icon">✓</span>
+          <span v-else-if="status === 'special'" class="status-icon">⭐</span>
+        </div>
+        <div class="guest-name">{{ guestName }}</div>
+        <div class="placement-dates">{{ startDate }} - {{ endDate }}</div>
+      </div>
+      <button 
+        @click.stop="handleDeleteClick" 
+        class="delete-btn"
+      >
+        <Icon name="mdi:close" class="w-4 h-4" />
+      </button>
+    </div>
     
     <!-- Используем компонент ConfirmDialog -->
     <ConfirmDialog
       :is-open="showDeleteConfirm"
       title="Подтверждение удаления"
-      message="Вы действительно хотите удалить размещение для гостя &quot;{{ guestName }}&quot;?"
+      :message="`Вы действительно хотите удалить размещение для гостя «${guestName}»?`"
       confirm-text="Удалить"
       cancel-text="Отмена"
+      :z-index="1000"
       @confirm="confirmDelete"
       @cancel="showDeleteConfirm = false"
     />
@@ -36,6 +39,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import ConfirmDialog from '~/components/ui/ConfirmDialog.vue';
 
 defineProps<{
   style: Record<string, string>;
@@ -51,6 +55,11 @@ const emit = defineEmits<{
 }>();
 
 const showDeleteConfirm = ref(false);
+
+const handleDeleteClick = (event: Event) => {
+  event.stopPropagation(); // Предотвращаем всплытие события
+  showDeleteConfirm.value = true;
+};
 
 const confirmDelete = () => {
   showDeleteConfirm.value = false;
