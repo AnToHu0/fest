@@ -1,0 +1,187 @@
+<template>
+  <div 
+    :style="style"
+    :class="['placement-card', status]"
+    @click.stop="$emit('edit')"
+  >
+    <div class="placement-info">
+      <div class="placement-status">
+        <span v-if="status === 'booked'" class="status-icon">🔒</span>
+        <span v-else-if="status === 'paid'" class="status-icon">💰</span>
+        <span v-else-if="status === 'settled'" class="status-icon">✓</span>
+        <span v-else-if="status === 'special'" class="status-icon">⭐</span>
+      </div>
+      <div class="guest-name">{{ guestName }}</div>
+      <div class="placement-dates">{{ startDate }} - {{ endDate }}</div>
+    </div>
+    <button 
+      @click.stop="showDeleteConfirm = true" 
+      class="delete-btn"
+    >
+      <Icon name="mdi:close" class="w-4 h-4" />
+    </button>
+    
+    <!-- Используем компонент ConfirmDialog -->
+    <ConfirmDialog
+      :is-open="showDeleteConfirm"
+      title="Подтверждение удаления"
+      message="Вы действительно хотите удалить размещение для гостя &quot;{{ guestName }}&quot;?"
+      confirm-text="Удалить"
+      cancel-text="Отмена"
+      @confirm="confirmDelete"
+      @cancel="showDeleteConfirm = false"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+
+defineProps<{
+  style: Record<string, string>;
+  status: string;
+  guestName: string;
+  startDate: string;
+  endDate: string;
+}>();
+
+const emit = defineEmits<{
+  (e: 'edit'): void;
+  (e: 'delete'): void;
+}>();
+
+const showDeleteConfirm = ref(false);
+
+const confirmDelete = () => {
+  showDeleteConfirm.value = false;
+  emit('delete');
+};
+</script>
+
+<style scoped>
+/* Карточка размещения */
+.placement-card {
+  position: absolute;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: white;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  animation: fadeIn 0.3s ease-in-out;
+  z-index: 5;
+  opacity: 1 !important;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+}
+
+/* Анимация появления карточек */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Эффект при наведении на карточку */
+.placement-card:hover {
+  transform: scale(1.02);
+  z-index: 9;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Контейнер информации в карточке */
+.placement-info {
+  width: 100%;
+  overflow: hidden;
+  padding-right: 8px; /* Отступ от кнопки удаления */
+}
+
+/* Статус размещения с иконкой */
+.placement-status {
+  float: right;
+  margin-left: 4px;
+  margin-right: 4px; /* Отступ от кнопки удаления */
+}
+
+.status-icon {
+  font-size: 12px;
+  display: inline-block;
+  margin-left: 2px;
+  transform: translateY(1px);
+}
+
+/* Имя гостя в карточке */
+.guest-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Даты размещения в карточке */
+.placement-dates {
+  font-size: 0.7rem;
+  opacity: 0.9;
+}
+
+/* Кнопка удаления */
+.delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  opacity: 0;
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placement-card:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Цвета для статусов размещений */
+.placement-card.booked {
+  background-color: #93c5fd !important; /* Бледно-синий для забронировано */
+}
+
+.placement-card.paid {
+  background-color: #3b82f6 !important; /* Ярко-синий для оплачено */
+}
+
+.placement-card.settled {
+  background-color: #34d399 !important; /* Более тёплый зелёный для расселено */
+}
+
+.placement-card.special {
+  background-color: #f97316 !important; /* Оранжевый (шафран) для спец-гостей */
+}
+
+/* Добавляем класс для неизвестного статуса */
+.placement-card:not(.booked):not(.paid):not(.settled):not(.special) {
+  background-color: #6b7280 !important; /* Серый для неизвестного статуса */
+}
+</style> 

@@ -12,80 +12,85 @@
 
     <!-- Таблица комнат -->
     <div v-else class="accommodation-timeline">
-      <!-- Заголовок таблицы -->
-      <div class="timeline-header grid grid-cols-[200px_1fr]">
-        <div class="p-3 font-medium text-gray-700 bg-white sticky left-0 z-10">Комната</div>
-        <div class="p-3 font-medium text-gray-700 overflow-x-auto" ref="timelineHeader" @scroll="onHeaderScroll">
-          <div class="grid" :style="`grid-template-columns: repeat(${totalDays}, 100px); min-width: ${totalDays * 100}px;`">
-            <template v-for="(day, index) in allDates" :key="index">
-              <div :class="getDayClass(day)" class="text-center">
-                {{ formatDate(day) }}
-              </div>
-            </template>
-          </div>
-        </div>
-      </div>
-
-      <!-- Основная область таймлайна -->
-      <div class="timeline-content overflow-auto" ref="timelineContent" @scroll="onContentScroll">
-        <div v-for="room in paginatedRooms" :key="room.id" class="timeline-row">
-          <!-- Для каждой комнаты создаем строки для каждого слота -->
-          <div v-for="slot in room.size" :key="`${room.id}-${slot}`" class="timeline-slot">
-            <!-- Информация о комнате (фиксированная часть) -->
-            <div class="timeline-room-info sticky left-0 z-10 bg-white p-3 border-r border-gray-200" :style="`width: 200px;`">
-              <template v-if="slot === 1">
-                <div class="font-medium">Корпус {{ room.building }}, этаж {{ room.floor }}</div>
-                <div class="text-sm text-gray-500">Комната {{ room.number }}</div>
-              </template>
-              <div class="text-sm">Место {{ slot }}</div>
-            </div>
-            
-            <!-- Слот комнаты (прокручиваемая часть) -->
-            <div class="timeline-slot-content">
-              <div class="grid relative w-full" :style="`grid-template-columns: repeat(${totalDays}, 100px); min-width: ${totalDays * 100}px;`">
+      <div class="timeline-table-container" ref="tableContainer">
+        <table class="timeline-table">
+          <thead>
+            <tr>
+              <!-- Фиксированная ячейка заголовка -->
+              <th class="room-header sticky top-0 left-0 z-40 bg-white">
+                <div class="font-medium">Комнаты</div>
+              </th>
+              
+              <!-- Даты -->
+              <th 
+                v-for="(date, index) in allDates" 
+                :key="index" 
+                class="date-header sticky top-0 z-30"
+                :class="{ 'weekend': isWeekend(date), 'current-date': isCurrentDate(date) }"
+              >
+                <div class="date-day">{{ formatDay(date) }}</div>
+                <div class="date-weekday">{{ formatWeekday(date) }}</div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="(room, roomIndex) in paginatedRooms" :key="room.id">
+              <tr 
+                v-for="(slot, slotIndex) in room.size" 
+                :key="`${room.id}-${slot}`" 
+                class="timeline-row"
+                :class="{ 'last-slot': slotIndex === room.size - 1 }"
+              >
+                <!-- Информация о комнате (фиксированная ячейка) -->
+                <td class="room-info-cell sticky left-0 z-20 bg-white">
+                  <div class="room-info-container">
+                    <template v-if="slot === 1">
+                      <div class="text-xs font-medium">Корпус {{ room.building }}, этаж {{ room.floor }}, комн. {{ room.number }}</div>
+                    </template>
+                    <template v-else>
+                      <div class="text-xs invisible">Корпус {{ room.building }}, этаж {{ room.floor }}, комн. {{ room.number }}</div>
+                    </template>
+                    <div class="text-sm">Место {{ slot }}</div>
+                  </div>
+                </td>
+                
                 <!-- Ячейки дней -->
-                <div 
+                <td 
                   v-for="(day, index) in allDates" 
                   :key="`${room.id}-${slot}-${index}`" 
                   :class="getDayClass(day, true)"
-                  class="rounded relative"
+                  class="day-cell relative"
                   @click="handleCellClick(room.id, slot, day)"
                 >
                   <!-- Иконка добавления при наведении -->
-                  <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-gray-200 bg-opacity-50 rounded cursor-pointer">
+                  <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-gray-200 bg-opacity-50 rounded cursor-pointer add-icon">
                     <Icon name="mdi:plus" class="text-indigo-600" />
                   </div>
-                </div>
-
-                <!-- Размещения -->
-                <div 
-                  v-for="placement in getPlacementsForSlot(room, slot)" 
-                  :key="placement.id"
-                  :style="getPlacementStyle(placement)"
-                  :class="getPlacementClass(placement)"
-                  class="absolute rounded px-2 flex items-center cursor-pointer"
-                  @click.stop="$emit('edit-placement', placement)"
-                >
-                  <div class="truncate text-sm">
-                    {{ getUserName(placement) }}
-                  </div>
-                  <button 
-                    @click.stop="$emit('delete-placement', placement.id)" 
-                    class="ml-auto text-white opacity-0 group-hover:opacity-100"
-                  >
-                    <Icon name="mdi:close" class="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                  
+                  <!-- Размещения - используем компонент PlacementCard -->
+                  <template v-for="placement in getPlacementsForSlot(room, slot)" :key="placement.id">
+                    <PlacementCard
+                      v-if="isPlacementVisible(placement, index)"
+                      :style="getPlacementStyle(placement, index)"
+                      :status="placement.type || ''"
+                      :guest-name="placement.user?.fullName || 'Гость'"
+                      :start-date="formatDate(placement.datefrom || '')"
+                      :end-date="formatDate(placement.dateto || '')"
+                      @edit="$emit('edit-placement', placement)"
+                      @delete="$emit('delete-placement', placement.id)"
+                    />
+                  </template>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
       </div>
 
       <!-- Пагинация -->
       <div class="mt-4 flex justify-between items-center">
         <div class="text-sm text-gray-600">
-          Показано {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, rooms.length) }} из {{ rooms.length }} комнат
+          Показано {{ paginatedRooms.length ? (currentPage - 1) * pageSize + 1 : 0 }} - {{ Math.min(currentPage * pageSize, rooms.length) }} из {{ rooms.length }} комнат
         </div>
         <div class="flex space-x-2">
           <button 
@@ -128,6 +133,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { PlacementStatus } from '~/types/accommodation';
 import type { Room, Placement } from '~/types/accommodation';
 import { getUserFullName } from './UserHelper';
+import PlacementCard from './PlacementCard.vue';
 
 // Определение входных параметров
 const props = defineProps<{
@@ -143,12 +149,8 @@ const emit = defineEmits<{
   (e: 'delete-placement', placementId: number): void;
 }>();
 
-// Ссылки на DOM-элементы для синхронизации скролла
-const timelineHeader = ref<HTMLElement | null>(null);
-const timelineContent = ref<HTMLElement | null>(null);
-
-// Флаг для предотвращения бесконечной синхронизации скролла
-const isScrolling = ref(false);
+// Ссылка на контейнер таблицы
+const tableContainer = ref<HTMLElement | null>(null);
 
 // Данные фестиваля
 const festival = ref<any>(null);
@@ -193,33 +195,6 @@ watch(pageSize, () => {
 watch(() => props.rooms, () => {
   currentPage.value = 1;
 }, { deep: true });
-
-// Обработчики скролла
-const onHeaderScroll = (e: Event) => {
-  if (isScrolling.value) return;
-  isScrolling.value = true;
-  
-  if (timelineContent.value && e.target) {
-    timelineContent.value.scrollLeft = (e.target as HTMLElement).scrollLeft;
-  }
-  
-  setTimeout(() => {
-    isScrolling.value = false;
-  }, 10);
-};
-
-const onContentScroll = (e: Event) => {
-  if (isScrolling.value) return;
-  isScrolling.value = true;
-  
-  if (timelineHeader.value && e.target) {
-    timelineHeader.value.scrollLeft = (e.target as HTMLElement).scrollLeft;
-  }
-  
-  setTimeout(() => {
-    isScrolling.value = false;
-  }, 10);
-};
 
 // Загрузка данных активного фестиваля
 const loadActiveFestival = () => {
@@ -358,7 +333,7 @@ const generateDateRange = (startDate: Date, endDate: Date) => {
 
 // Установка начальной позиции скролла (на дату начала фестиваля)
 const scrollToFestivalStart = () => {
-  if (festivalStartDate.value && allDates.value.length > 0) {
+  if (festivalStartDate.value && allDates.value.length > 0 && tableContainer.value) {
     // Находим индекс даты начала фестиваля в массиве всех дат
     const startIndex = allDates.value.findIndex(date => 
       date.getFullYear() === festivalStartDate.value!.getFullYear() &&
@@ -368,13 +343,16 @@ const scrollToFestivalStart = () => {
     
     if (startIndex !== -1) {
       // Устанавливаем скролл на дату начала фестиваля с небольшим отступом слева (2-3 дня)
-      const scrollOffset = Math.max(0, (startIndex - 2) * 100); // 2 дня отступа слева
+      const scrollOffset = Math.max(0, (startIndex - 2) * 100 + 200); // 200px - ширина колонки с комнатами
       
-      // Используем setTimeout, чтобы DOM успел обновиться после отрисовки компонента
-      setTimeout(() => {
-        if (timelineHeader.value) timelineHeader.value.scrollLeft = scrollOffset;
-        if (timelineContent.value) timelineContent.value.scrollLeft = scrollOffset;
-      }, 100); // Небольшая задержка для более надежной работы
+      // Используем nextTick и requestAnimationFrame для более надежной работы
+      nextTick(() => {
+        requestAnimationFrame(() => {
+          if (tableContainer.value) {
+            tableContainer.value.scrollLeft = scrollOffset;
+          }
+        });
+      });
     }
   }
 };
@@ -408,24 +386,55 @@ const getDayClass = (date: Date, isCell = false) => {
   return classes.join(' ');
 };
 
-// Форматирование даты
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('ru-RU', { 
-    day: 'numeric', 
-    month: 'short',
-    weekday: 'short'
-  }).format(date);
+// Форматирование даты для отображения в карточке
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+  } catch (e) {
+    console.error('Ошибка при форматировании даты:', e);
+    return '';
+  }
 };
 
 // Получение размещений для конкретного слота
 const getPlacementsForSlot = (room: Room, slot: number) => {
-  if (!room.placements) return [];
-  return room.placements.filter(p => p.slot === slot);
+  if (!room || !room.placements || !Array.isArray(room.placements)) return [];
+  return room.placements.filter(p => p && typeof p === 'object' && p.slot === slot);
+};
+
+// Проверка видимости размещения в конкретной ячейке
+const isPlacementVisible = (placement: Placement, dayIndex: number) => {
+  if (!placement || !placement.datefrom || !placement.dateto || !allDates.value.length) return false;
+
+  const startDate = new Date(placement.datefrom);
+  const endDate = new Date(placement.dateto);
+  
+  // Получаем индексы дат в массиве
+  const startIndex = allDates.value.findIndex(date => 
+    date.getFullYear() === startDate.getFullYear() &&
+    date.getMonth() === startDate.getMonth() &&
+    date.getDate() === startDate.getDate()
+  );
+  
+  const endIndex = allDates.value.findIndex(date => 
+    date.getFullYear() === endDate.getFullYear() &&
+    date.getMonth() === endDate.getMonth() &&
+    date.getDate() === endDate.getDate()
+  );
+  
+  // Если размещение не попадает в отображаемый диапазон
+  if (startIndex === -1 || endIndex === -1) return false;
+  
+  // Размещение видимо только в первой ячейке его диапазона
+  return dayIndex === startIndex;
 };
 
 // Вычисление стиля для отображения размещения на таймлайне
-const getPlacementStyle = (placement: Placement) => {
-  if (!placement.datefrom || !placement.dateto || !allDates.value.length) return {};
+const getPlacementStyle = (placement: Placement, dayIndex: number) => {
+  if (!placement || !placement.datefrom || !placement.dateto || !allDates.value.length) return {};
 
   const startDate = new Date(placement.datefrom);
   const endDate = new Date(placement.dateto);
@@ -446,40 +455,18 @@ const getPlacementStyle = (placement: Placement) => {
   // Если размещение не попадает в отображаемый диапазон
   if (startIndex === -1 || endIndex === -1) return { display: 'none' };
   
-  // Вычисляем позицию и ширину
-  const left = `${startIndex * 100}px`;
-  const width = `${(endIndex - startIndex + 1) * 100}px`;
-  const height = '40px'; // Высота соответствует ячейкам дней
+  // Вычисляем ширину (в ячейках)
+  const cellWidth = 120; // Ширина ячейки
+  const width = (endIndex - startIndex + 1) * cellWidth - 6; // Ширина с отступами по 3px с каждой стороны
   
   return {
-    left,
-    width,
-    height,
-    top: '8px', // Отступ, соответствующий margin ячеек
+    width: `${width}px`,
+    height: 'calc(100% - 6px)', // Высота с отступами по 3px сверху и снизу
+    position: 'absolute',
+    left: '3px',
+    top: '3px',
+    zIndex: 10
   };
-};
-
-// Определение класса для размещения в зависимости от статуса
-const getPlacementClass = (placement: Placement) => {
-  const baseClass = 'group z-10';
-  
-  switch (placement.type) {
-    case PlacementStatus.BOOKED:
-      return `${baseClass} bg-yellow-500 text-white`;
-    case PlacementStatus.PAID:
-      return `${baseClass} bg-green-500 text-white`;
-    case PlacementStatus.SETTLED:
-      return `${baseClass} bg-blue-500 text-white`;
-    case PlacementStatus.SPECIAL:
-      return `${baseClass} bg-purple-500 text-white`;
-    default:
-      return `${baseClass} bg-gray-500 text-white`;
-  }
-};
-
-// Получение имени пользователя
-const getUserName = (placement: any) => {
-  return getUserFullName(placement);
 };
 
 // Обработчик клика по ячейке
@@ -513,94 +500,180 @@ watch(paginatedRooms, () => {
   });
 });
 
-// Загрузка данных фестиваля при монтировании компонента
+// Настройка после монтирования компонента
 onMounted(() => {
-  // После монтирования также устанавливаем начальный скролл
-  scrollToFestivalStart();
+  // После монтирования устанавливаем начальный скролл
+  nextTick(() => {
+    scrollToFestivalStart();
+  });
 });
+
+// Функции для форматирования даты
+const formatDay = (date: Date) => {
+  return date.getDate();
+};
+
+const formatWeekday = (date: Date) => {
+  return date.toLocaleDateString('ru-RU', { weekday: 'short' });
+};
+
+const isWeekend = (date: Date) => {
+  const day = date.getDay();
+  return day === 0 || day === 6; // 0 = воскресенье, 6 = суббота
+};
+
+const isCurrentDate = (date: Date) => {
+  const today = new Date();
+  return date.getDate() === today.getDate() &&
+         date.getMonth() === today.getMonth() &&
+         date.getFullYear() === today.getFullYear();
+};
 </script>
 
 <style scoped>
 /* Стили для таймлайна */
 .accommodation-timeline {
   position: relative;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #d1d5db;
   border-radius: 0.375rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Заголовок таймлайна */
-.timeline-header {
-  border-bottom: 1px solid #e5e7eb;
+/* Контейнер таблицы */
+.timeline-table-container {
+  max-height: 70vh;
+  overflow: auto;
+  position: relative;
+}
+
+/* Таблица таймлайна */
+.timeline-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+/* Заголовок таблицы */
+.timeline-table thead {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
   background-color: white;
 }
 
-/* Содержимое таймлайна */
-.timeline-content {
-  max-height: 70vh;
-  overflow: auto;
+/* Ячейка заголовка с комнатами */
+.room-header {
+  width: 200px;
+  padding: 0.75rem;
+  text-align: center;
+  background-color: #fff;
+  border-bottom: 2px solid #d1d5db;
 }
 
-/* Строка таймлайна (комната) */
+/* Ячейка заголовка с датами */
+.date-header {
+  width: 100px;
+  padding: 0.75rem;
+  text-align: center;
+  background-color: #fff;
+  border-bottom: 2px solid #d1d5db;
+}
+
+.date-day {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.date-weekday {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Строка таймлайна */
 .timeline-row {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.timeline-row:last-child {
+/* Более заметный бордер для последнего слота в комнате */
+.timeline-row.last-slot td {
+  border-bottom: 2px solid #d1d5db;
+}
+
+/* Последняя строка не должна иметь нижней границы */
+.timeline-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* Слот комнаты */
-.timeline-slot {
-  display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  min-height: 56px; /* Увеличенная минимальная высота для слота */
+.timeline-row:nth-child(even) {
+  background-color: rgba(245, 247, 250, 0.5);
 }
 
-.timeline-slot:last-child {
-  border-bottom: none;
+/* Ячейка с информацией о комнате */
+.room-info-cell {
+  padding: 0.75rem;
+  border-right: 2px solid #d1d5db;
+  min-width: 200px;
 }
 
-/* Информация о комнате */
-.timeline-room-info {
-  flex-shrink: 0;
+/* Контейнер для информации о комнате */
+.room-info-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-  background-color: white; /* Явно указываем белый фон */
-  z-index: 10; /* Высокий z-index для отображения поверх остального контента */
+  gap: 0.25rem;
 }
 
-/* Содержимое слота */
-.timeline-slot-content {
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
+/* Ячейка дня */
+.day-cell {
+  padding: 0;
+  min-width: 120px;
+  height: 44px;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
   position: relative;
 }
 
-/* Грид для ячеек дней */
-.timeline-slot-content .grid {
-  height: 100%;
-  display: grid;
-  align-items: center;
+.day-cell:last-child {
+  border-right: none;
 }
 
-/* Ячейки дней */
-.timeline-slot-content .grid > div {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 8px 0;
+/* Стили для выходных и текущей даты */
+.weekend {
+  background-color: #f9fafb;
 }
 
-/* Прокрутка только по горизонтали для заголовка */
-.overflow-x-auto {
+.current-date {
+  background-color: #eef2ff;
+}
+
+/* Улучшаем отображение кнопок пагинации */
+.mt-4 button {
+  transition: all 0.3s ease;
+}
+
+.mt-4 button:not(:disabled):hover {
+  background-color: #f3f4f7;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Улучшаем отображение селекта пагинации */
+.mt-4 select {
+  transition: all 0.3s ease;
+}
+
+.mt-4 select:hover {
+  border-color: #a5b4fc;
+}
+
+.add-icon {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.timeline-table-container {
   overflow-x: auto;
-  overflow-y: hidden;
+  max-width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
 }
 </style> 
