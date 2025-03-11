@@ -76,9 +76,13 @@
                       :guest-name="getUserFullName(placement)"
                       :start-date="formatDate(placement.datefrom || '')"
                       :end-date="formatDate(placement.dateto || '')"
+                      :children="getChildrenForPlacement(placement)"
                       @edit="$emit('edit-placement', placement)"
                       @delete="$emit('delete-placement', placement.id)"
                     />
+                    <div v-if="isPlacementVisible(placement, index)" style="display: none;">
+                      {{ console.log('Placement data:', placement.id, placement) }}
+                    </div>
                   </template>
                 </td>
               </tr>
@@ -433,7 +437,24 @@ const formatDate = (dateStr: string) => {
 // Получение размещений для конкретного слота
 const getPlacementsForSlot = (room: Room, slot: number) => {
   if (!room || !room.placements || !Array.isArray(room.placements)) return [];
-  return room.placements.filter(p => p && typeof p === 'object' && p.slot === slot);
+  
+  const placements = room.placements.filter(p => p && typeof p === 'object' && p.slot === slot);
+  
+  // Отладочный вывод для проверки данных о размещениях и детях
+  if (placements.length > 0) {
+    // Проверяем тип данных размещений
+    console.log('Placement type check:', 
+      placements.map(p => ({
+        id: p.id,
+        hasChildren: p.hasOwnProperty('Children'),
+        childrenType: p.Children ? typeof p.Children : 'undefined',
+        isArray: p.Children ? Array.isArray(p.Children) : false,
+        childrenLength: p.Children && Array.isArray(p.Children) ? p.Children.length : 0
+      }))
+    );
+  }
+  
+  return placements;
 };
 
 // Проверка видимости размещения в конкретной ячейке
@@ -617,6 +638,35 @@ const paginationPages = computed(() => {
   
   return pages;
 });
+
+// Новая функция для получения детей размещения
+const getChildrenForPlacement = (placement: Placement) => {
+  // Проверяем наличие свойства Children у размещения
+  if (placement && placement.hasOwnProperty('Children')) {
+    const children = (placement as any).Children;
+    
+    // Проверяем, что children - это массив
+    if (Array.isArray(children)) {
+      // Отладочный вывод для анализа структуры данных
+      if (children.length > 0) {
+        console.log(`[DEBUG] Children for placement ${placement.id}:`, 
+          children.map(child => ({
+            id: child.id,
+            childId: child.childId,
+            hasChild: child.hasOwnProperty('Child'),
+            hasChildData: child.hasOwnProperty('childData'),
+            childDataKeys: child.childData ? Object.keys(child.childData) : [],
+            registeredChildPath: child.childData && child.childData.RegisteredChild ? 'childData.RegisteredChild' : 
+                                 child.Child && child.Child.RegisteredChild ? 'Child.RegisteredChild' : 'not found'
+          }))
+        );
+      }
+      return children;
+    }
+  }
+  
+  return [];
+};
 </script>
 
 <style scoped>

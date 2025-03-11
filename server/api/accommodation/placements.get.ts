@@ -1,6 +1,8 @@
 import { FestPlacement } from '~/server/models/FestPlacement';
 import { User } from '~/server/models/User';
 import { FestRoom } from '~/server/models/FestRoom';
+import { FestPlacementChild } from '~/server/models/FestPlacementChild';
+import { FestRegistrationChild } from '~/server/models/FestRegistrationChild';
 import { getServerSession } from '#auth';
 import { Op } from 'sequelize';
 
@@ -94,6 +96,23 @@ export default defineEventHandler(async (event) => {
         {
           model: FestRoom,
           attributes: ['id', 'building', 'floor', 'number', 'size']
+        },
+        {
+          model: FestPlacementChild,
+          as: 'Children',
+          include: [
+            {
+              model: FestRegistrationChild,
+              as: 'Child',
+              include: [
+                {
+                  model: User,
+                  as: 'RegisteredChild',
+                  attributes: ['id', 'fullName', 'birthdate', 'spiritualName']
+                }
+              ]
+            }
+          ]
         }
       ],
       order: [

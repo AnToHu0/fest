@@ -1,6 +1,7 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '~/server/database';
 import type { Models } from './index';
+import { FestPlacementChild } from './FestPlacementChild';
 
 
 export interface FestPlacementAttributes {
@@ -13,10 +14,11 @@ export interface FestPlacementAttributes {
   datefrom: Date | null;
   dateto: Date | null;
   comment: string;
+  Children?: FestPlacementChild[];
 }
 
 
-export interface FestPlacementCreationAttributes extends Optional<FestPlacementAttributes, 'id' | 'type' | 'datefrom' | 'dateto' | 'comment'> { }
+export interface FestPlacementCreationAttributes extends Optional<FestPlacementAttributes, 'id' | 'type' | 'datefrom' | 'dateto' | 'comment' | 'Children'> { }
 
 
 export class FestPlacement extends Model<FestPlacementAttributes, FestPlacementCreationAttributes> implements FestPlacementAttributes {
@@ -29,12 +31,14 @@ export class FestPlacement extends Model<FestPlacementAttributes, FestPlacementC
   declare datefrom: Date | null;
   declare dateto: Date | null;
   declare comment: string;
+  declare Children?: FestPlacementChild[];
 
   
   static associate(models: Models) {
     this.belongsTo(models.FestRoom, { foreignKey: 'roomId' });
     this.belongsTo(models.User, { foreignKey: 'managerId', as: 'Manager' });
     this.belongsTo(models.User, { foreignKey: 'userId', as: 'User' });
+    this.hasMany(models.FestPlacementChild, { foreignKey: 'placementId', as: 'Children' });
   }
 }
 

@@ -12,7 +12,12 @@
           <span v-else-if="status === 'settled'" class="status-icon">✓</span>
           <span v-else-if="status === 'special'" class="status-icon">⭐</span>
         </div>
-        <div class="guest-name">{{ guestName }}</div>
+        <div class="guest-name">
+          {{ guestName }}
+          <span v-if="childrenCount > 0" class="children-info" :title="childrenTooltip">
+            +{{ childrenCount }} {{ childrenText }}
+          </span>
+        </div>
         <div class="placement-dates">{{ startDate }} - {{ endDate }}</div>
       </div>
       <button 
@@ -38,16 +43,64 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import ConfirmDialog from '~/components/ui/ConfirmDialog.vue';
 
-defineProps<{
+const props = defineProps<{
   style: Record<string, string>;
   status: string;
   guestName: string;
   startDate: string;
   endDate: string;
+  children?: any[];
 }>();
+
+// Отладочный вывод для проверки данных о детях
+console.log('PlacementCard props:', {
+  guestName: props.guestName,
+  hasChildren: props.hasOwnProperty('children'),
+  childrenType: props.children ? typeof props.children : 'undefined',
+  isArray: props.children ? Array.isArray(props.children) : false,
+  childrenLength: props.children && Array.isArray(props.children) ? props.children.length : 0,
+  children: props.children
+});
+
+const childrenCount = computed(() => {
+  if (!props.children) return 0;
+  return Array.isArray(props.children) ? props.children.length : 0;
+});
+
+const childrenText = computed(() => {
+  const count = childrenCount.value;
+  if (count === 1) return 'ребенок';
+  if (count >= 2 && count <= 4) return 'ребенка';
+  return 'детей';
+});
+
+const childrenTooltip = computed(() => {
+  if (!props.children || !Array.isArray(props.children) || props.children.length === 0) return '';
+  
+  // Отладочный вывод для анализа структуры данных
+  console.log('Children data structure:', JSON.stringify(props.children[0], null, 2));
+  
+  // Улучшенная логика для получения имен детей
+  return props.children.map(child => {
+    // Проверяем различные пути к имени ребенка
+    if (child.Child && child.Child.RegisteredChild && child.Child.RegisteredChild.fullName) {
+      return child.Child.RegisteredChild.fullName;
+    }
+    
+    if (child.childData && child.childData.RegisteredChild && child.childData.RegisteredChild.fullName) {
+      return child.childData.RegisteredChild.fullName;
+    }
+    
+    if (child.fullName) {
+      return child.fullName;
+    }
+    
+    return 'Ребенок';
+  }).join(', ');
+});
 
 const emit = defineEmits<{
   (e: 'edit'): void;
@@ -192,5 +245,16 @@ const confirmDelete = () => {
 /* Добавляем класс для неизвестного статуса */
 .placement-card:not(.booked):not(.paid):not(.settled):not(.special) {
   background-color: #6b7280 !important; /* Серый для неизвестного статуса */
+}
+
+/* Информация о детях */
+.children-info {
+  font-size: 0.7rem;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-left: 4px;
+  display: inline-block;
+  cursor: help;
 }
 </style> 

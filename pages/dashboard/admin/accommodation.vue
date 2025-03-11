@@ -204,10 +204,98 @@ const handleDeletePlacement = async (placementId: number) => {
   }
 };
 
+// Функция для обновления размещений в комнате
+const updateRoomPlacements = async (roomId: number) => {
+  try {
+    console.log(`Запрашиваем обновленные данные о размещениях в комнате ${roomId}...`);
+    
+    // Добавляем небольшую задержку, чтобы дать API время на обработку изменений
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const roomResponse = await $fetch(`/api/accommodation/rooms/${roomId}`, {
+      query: {
+        withPlacements: 'true',
+      },
+    });
+    
+    console.log('Ответ API для комнаты:', roomResponse);
+    
+    if (roomResponse.room && roomResponse.room.placements) {
+      const placements = roomResponse.room.placements;
+      console.log(`Получено ${placements.length} размещений для комнаты ${roomId}:`, placements);
+      
+      // Проверяем, есть ли размещения типа 'child'
+      const childPlacements = placements.filter(p => p.type === 'child');
+      console.log(`Найдено ${childPlacements.length} детских размещений:`, childPlacements);
+      
+      // Обновляем размещения в комнате
+      rooms.value = rooms.value.map(room => {
+        if (room.id === roomId) {
+          console.log(`Обновляем размещения в комнате ${roomId} с ${room.placements?.length || 0} на ${placements.length}`);
+          return {
+            ...room,
+            placements: placements
+          };
+        }
+        return room;
+      });
+      
+      console.log(`Обновлены размещения в комнате ${roomId}, найдено ${placements.length} размещений`);
+      return true;
+    } else {
+      console.warn(`API не вернул размещения для комнаты ${roomId}`);
+    }
+  } catch (error) {
+    console.error(`Ошибка при получении обновленных данных о комнате ${roomId}:`, error);
+  }
+  
+  // Если не удалось обновить через API, попробуем получить все комнаты
+  try {
+    console.log('Пробуем получить все комнаты с размещениями...');
+    const response = await $fetch('/api/accommodation/rooms', {
+      query: {
+        withPlacements: 'true',
+      },
+    });
+    
+    if (response.rooms) {
+      const updatedRoom = response.rooms.find(r => r.id === roomId);
+      if (updatedRoom && updatedRoom.placements) {
+        console.log(`Найдена комната ${roomId} с ${updatedRoom.placements.length} размещениями`);
+        
+        // Обновляем размещения в комнате
+        rooms.value = rooms.value.map(room => {
+          if (room.id === roomId) {
+            return {
+              ...room,
+              placements: updatedRoom.placements
+            };
+          }
+          return room;
+        });
+        
+        console.log(`Обновлены размещения в комнате ${roomId} через общий запрос`);
+        return true;
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка при получении всех комнат:', error);
+  }
+  
+  return false;
+};
+
 // Обработчик отправки формы размещения
 const handleSubmitPlacement = async (formData: PlacementFormData) => {
   try {
-    let updatedPlacement;
+    let updatedPlacements = [];
+    let hasChildrenWithSeparateBeds = false;
+    
+    // Проверяем, есть ли дети с отдельными кроватями
+    if (formData.children && formData.children.length > 0) {
+      hasChildrenWithSeparateBeds = formData.children.some(child => child.needsSeparateBed);
+      console.log(`Форма содержит ${formData.children.length} детей, из них ${formData.children.filter(c => c.needsSeparateBed).length} с отдельными кроватями`);
+    }
     
     // Убедимся, что даты в правильном формате
     const formattedData = {
@@ -219,56 +307,113 @@ const handleSubmitPlacement = async (formData: PlacementFormData) => {
     
     if (currentPlacement.value) {
       // Обновление существующего размещения
+      console.log(`Обновляем размещение ${currentPlacement.value.id} в комнате ${formData.roomId}`);
       const response = await $fetch(`/api/accommodation/placements/${currentPlacement.value.id}`, {
         method: 'PUT',
         body: formattedData,
       });
       
-      // Получаем обновленное размещение из ответа API
-      updatedPlacement = response.placement;
+      console.log('Ответ API при обновлении размещения:', response);
       
-      // Обновляем размещение в локальном состоянии
-      rooms.value = rooms.value.map(room => {
-        if (room.id === updatedPlacement.roomId && room.placements) {
-          return {
-            ...room,
-            placements: room.placements.map(p => 
-              p.id === updatedPlacement.id ? updatedPlacement : p
-            )
-          };
+      // Получаем обновленные размещения из ответа API
+      // Проверяем, есть ли в ответе массив placements (для детей) или одиночное размещение
+      if (response.placements && Array.isArray(response.placements)) {
+        updatedPlacements = response.placements;
+        console.log(`Получено ${updatedPlacements.length} размещений из ответа API`);
+      } else if (response.placement) {
+        updatedPlacements = [response.placement];
+        console.log('Получено 1 размещение из ответа API');
+      }
+      
+      // Если в форме были дети, всегда обновляем размещения в комнате
+      if (hasChildrenWithSeparateBeds || (formData.children && formData.children.length > 0)) {
+        console.log('Форма содержит детей, обновляем все размещения в комнате');
+        await updateRoomPlacements(formData.roomId);
+      } else {
+        // Обновляем размещения в локальном состоянии
+        if (updatedPlacements.length > 0) {
+          // Сначала удаляем старое размещение
+          rooms.value = rooms.value.map(room => {
+            if (room.placements) {
+              return {
+                ...room,
+                placements: room.placements.filter(p => p.id !== currentPlacement.value.id)
+              };
+            }
+            return room;
+          });
+          
+          // Затем добавляем все обновленные размещения
+          rooms.value = rooms.value.map(room => {
+            // Находим размещения для текущей комнаты
+            const roomPlacements = updatedPlacements.filter(p => p.roomId === room.id);
+            
+            if (roomPlacements.length > 0) {
+              // Создаем копию массива размещений или инициализируем новый массив
+              const placements = [...(room.placements || [])];
+              
+              // Добавляем новые размещения
+              placements.push(...roomPlacements);
+              
+              return {
+                ...room,
+                placements
+              };
+            }
+            return room;
+          });
         }
-        return room;
-      });
+      }
       
-      console.log('Размещение успешно обновлено');
+      console.log('Размещение успешно обновлено, включая размещения детей:', updatedPlacements.length);
     } else {
       // Создание нового размещения
+      console.log(`Создаем новое размещение в комнате ${formData.roomId}`);
       const response = await $fetch('/api/accommodation/placements', {
         method: 'POST',
         body: formattedData,
       });
       
-      // Получаем новое размещение из ответа API
-      updatedPlacement = response.placement;
+      console.log('Ответ API при создании размещения:', response);
       
-      // Добавляем новое размещение в локальное состояние
-      rooms.value = rooms.value.map(room => {
-        if (room.id === updatedPlacement.roomId) {
-          // Создаем копию массива размещений или инициализируем новый массив
-          const placements = [...(room.placements || [])];
-          
-          // Добавляем новое размещение
-          placements.push(updatedPlacement);
-          
-          return {
-            ...room,
-            placements
-          };
+      // Получаем новые размещения из ответа API
+      if (response.placements && Array.isArray(response.placements)) {
+        updatedPlacements = response.placements;
+        console.log(`Получено ${updatedPlacements.length} размещений из ответа API`);
+      } else if (response.placement) {
+        updatedPlacements = [response.placement];
+        console.log('Получено 1 размещение из ответа API');
+      }
+      
+      // Если в форме были дети, всегда обновляем размещения в комнате
+      if (hasChildrenWithSeparateBeds || (formData.children && formData.children.length > 0)) {
+        console.log('Форма содержит детей, обновляем все размещения в комнате');
+        await updateRoomPlacements(formData.roomId);
+      } else {
+        // Добавляем новые размещения в локальное состояние
+        if (updatedPlacements.length > 0) {
+          rooms.value = rooms.value.map(room => {
+            // Находим размещения для текущей комнаты
+            const roomPlacements = updatedPlacements.filter(p => p.roomId === room.id);
+            
+            if (roomPlacements.length > 0) {
+              // Создаем копию массива размещений или инициализируем новый массив
+              const placements = [...(room.placements || [])];
+              
+              // Добавляем новые размещения
+              placements.push(...roomPlacements);
+              
+              return {
+                ...room,
+                placements
+              };
+            }
+            return room;
+          });
         }
-        return room;
-      });
+      }
       
-      console.log('Размещение успешно создано');
+      console.log('Размещения успешно созданы:', updatedPlacements.length);
     }
     
     // Закрываем модальное окно

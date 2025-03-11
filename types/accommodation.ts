@@ -40,12 +40,25 @@ export interface PlacementFormData {
   datefrom: string | null;
   dateto: string | null;
   comment: string;
+  children?: ChildFormData[];
+}
+
+export interface ChildFormData {
+  id: number;
+  childId: number;
+  needsSeparateBed: boolean;
+  selected: boolean;
+  fullName?: string;
+  birthdate?: string;
+  spiritualName?: string;
 }
 
 export interface UserChild {
   id: number;
-  userId: number;
+  childId: number;
+  registrationId: number;
+  needsSeparateBed: boolean;
   fullName: string;
-  birthdate: string;
-  needsBed: boolean;
+  birthdate: string | null;
+  spiritualName: string;
 } 
