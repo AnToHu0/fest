@@ -95,44 +95,128 @@ const filteredRooms = computed(() => {
 
   // Фильтр по имени/email/телефону пользователя
   if (filters.value.searchUser) {
-    const searchLower = filters.value.searchUser.toLowerCase();
+    const searchLower = filters.value.searchUser.toLowerCase().trim();
+    console.log('Поиск по строке:', searchLower);
+    
+    // Если строка поиска содержит только цифры, считаем что это поиск по телефону
+    const isPhoneSearch = /^\d+$/.test(searchLower);
+    console.log('Тип поиска:', isPhoneSearch ? 'по телефону' : 'по тексту');
+    
+    // Для поиска по телефону удаляем все нецифровые символы
+    const cleanSearchPhone = isPhoneSearch ? searchLower : searchLower.replace(/\D/g, '');
+    
+    // Разбиваем поисковый запрос на слова для более точного поиска
+    const searchWords = !isPhoneSearch ? searchLower.split(/\s+/).filter(word => word.length > 0) : [];
+    console.log('Поисковые слова:', searchWords);
+    
     result = result.filter(room => {
-      if (!room.placements) return false;
+      if (!room.placements || room.placements.length === 0) return false;
+      
+      // Отладочный вывод для проверки комнаты
+      console.log(`Проверка комнаты ${room.building}-${room.floor}-${room.number}, размещений: ${room.placements.length}`);
+      
       return room.placements.some(placement => {
-        if (!placement.user) return false;
+        // Проверяем наличие пользователя
+        if (!placement.user && !(placement as any).User) {
+          console.log(`Размещение ${placement.id} не имеет пользователя`);
+          return false;
+        }
         
-        // Проверяем ФИО
-        const fullName = placement.user.fullName ? placement.user.fullName.toLowerCase() : '';
-        
-        // Проверяем email
-        const email = placement.user.email ? placement.user.email.toLowerCase() : '';
+        // Получаем данные пользователя (учитываем разные пути)
+        const user = placement.user || (placement as any).User;
         
         // Проверяем searchField
-        const searchField = placement.user.searchField ? placement.user.searchField.toLowerCase() : '';
+        let searchField = '';
+        if (user.searchField) {
+          searchField = user.searchField.toLowerCase();
+        }
         
         // Проверяем телефон (обрабатываем разные варианты доступа к полю)
         let phone = '';
-        if (placement.user.phone) {
-          phone = placement.user.phone;
-        } else if (placement.user.phoneNumber) {
-          phone = placement.user.phoneNumber;
-        } else if (placement.User && placement.User.phone) {
-          phone = placement.User.phone;
-        } else if (placement.User && placement.User.phoneNumber) {
-          phone = placement.User.phoneNumber;
+        if (user.phone) {
+          phone = user.phone;
+        } else if (user.phoneNumber) {
+          phone = user.phoneNumber;
         }
         
-        // Удаляем все нецифровые символы из строки поиска и телефона для сравнения
-        const cleanSearchPhone = searchLower.replace(/\D/g, '');
+        // Очищаем телефон от нецифровых символов
         const cleanPhone = phone.replace(/\D/g, '');
         
-        // Проверяем, содержит ли какое-либо из полей строку поиска
-        return fullName.includes(searchLower) || 
-               email.includes(searchLower) || 
-               searchField.includes(searchLower) ||
-               (cleanPhone && cleanPhone.includes(cleanSearchPhone));
+        // Проверяем совпадение по телефону (если есть цифры в поиске)
+        if (cleanSearchPhone.length > 0 && cleanPhone.includes(cleanSearchPhone)) {
+          console.log(`Найдено совпадение по телефону в размещении ${placement.id}:`, 
+                     { phone: cleanPhone, search: cleanSearchPhone });
+          return true;
+        }
+        
+        // Для поиска по тексту проверяем searchField
+        if (!isPhoneSearch && searchField) {
+          // Проверяем, содержит ли searchField все слова из поискового запроса
+          if (searchWords.length > 0) {
+            const allWordsMatch = searchWords.every(word => searchField.includes(word));
+            if (allWordsMatch) {
+              console.log(`Найдено совпадение по всем словам в searchField в размещении ${placement.id}:`, 
+                         { searchField, searchWords });
+              return true;
+            }
+          } 
+          // Если поисковый запрос - одно слово, проверяем простое включение
+          else if (searchField.includes(searchLower)) {
+            console.log(`Найдено совпадение по searchField в размещении ${placement.id}:`, 
+                       { searchField, search: searchLower });
+            return true;
+          }
+        }
+        
+        // Проверяем детей
+        const childrenArray = (placement as any).Children || (placement as any).children;
+        if (childrenArray && Array.isArray(childrenArray) && childrenArray.length > 0) {
+          console.log(`Проверка ${childrenArray.length} детей в размещении ${placement.id}`);
+          
+          const childMatch = childrenArray.some((child: any) => {
+            // Получаем имя ребенка из разных возможных путей
+            let childName = '';
+            
+            if (child.Child && child.Child.RegisteredChild && child.Child.RegisteredChild.fullName) {
+              childName = child.Child.RegisteredChild.fullName.toLowerCase();
+            } else if (child.childData && child.childData.RegisteredChild && child.childData.RegisteredChild.fullName) {
+              childName = child.childData.RegisteredChild.fullName.toLowerCase();
+            } else if (child.RegisteredChild && child.RegisteredChild.fullName) {
+              childName = child.RegisteredChild.fullName.toLowerCase();
+            } else if (child.fullName) {
+              childName = child.fullName.toLowerCase();
+            } else if (child.name) {
+              childName = child.name.toLowerCase();
+            }
+            
+            // Для поиска по тексту проверяем имя ребенка
+            if (!isPhoneSearch && childName) {
+              // Проверяем, содержит ли имя ребенка все слова из поискового запроса
+              if (searchWords.length > 0) {
+                const allWordsMatch = searchWords.every(word => childName.includes(word));
+                if (allWordsMatch) {
+                  console.log(`Найдено совпадение по всем словам у ребенка: ${childName}`);
+                  return true;
+                }
+              } 
+              // Если поисковый запрос - одно слово, проверяем простое включение
+              else if (childName.includes(searchLower)) {
+                console.log(`Найдено совпадение у ребенка: ${childName}`);
+                return true;
+              }
+            }
+            
+            return false;
+          });
+          
+          if (childMatch) return true;
+        }
+        
+        return false;
       });
     });
+    
+    console.log(`После фильтрации найдено ${result.length} комнат`);
   }
 
   return result;
@@ -148,6 +232,53 @@ const fetchRooms = async () => {
       },
     });
     rooms.value = response.rooms;
+    
+    // Отладочный вывод для анализа структуры данных
+    console.log(`Загружено ${rooms.value.length} комнат`);
+    
+    // Анализируем структуру данных размещений
+    let placementsCount = 0;
+    let placementsWithChildren = 0;
+    let childrenCount = 0;
+    
+    rooms.value.forEach(room => {
+      if (room.placements && room.placements.length > 0) {
+        placementsCount += room.placements.length;
+        
+        room.placements.forEach(placement => {
+          // Проверяем наличие детей
+          const childrenArray = (placement as any).Children || (placement as any).children;
+          if (childrenArray && Array.isArray(childrenArray) && childrenArray.length > 0) {
+            placementsWithChildren++;
+            childrenCount += childrenArray.length;
+          }
+          
+          // Проверяем структуру данных пользователя
+          if (placement.user) {
+            console.log(`Размещение ${placement.id} имеет user с полями:`, Object.keys(placement.user));
+            
+            // Проверяем наличие searchField
+            if (placement.user.searchField) {
+              console.log(`Размещение ${placement.id} имеет searchField:`, placement.user.searchField);
+            }
+            
+            // Проверяем наличие телефона
+            const phone = placement.user.phone || placement.user.phoneNumber;
+            if (phone) {
+              console.log(`Размещение ${placement.id} имеет телефон:`, phone);
+            }
+          } else if ((placement as any).User) {
+            console.log(`Размещение ${placement.id} имеет User с полями:`, Object.keys((placement as any).User));
+          } else {
+            console.log(`Размещение ${placement.id} не имеет данных пользователя`);
+          }
+        });
+      }
+    });
+    
+    console.log(`Всего размещений: ${placementsCount}`);
+    console.log(`Размещений с детьми: ${placementsWithChildren}`);
+    console.log(`Всего детей: ${childrenCount}`);
     
     // Если получена информация о фестивале, передаем её в компонент таймлайна
     festivalInfo.value = response.festivalInfo;
