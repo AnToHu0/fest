@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Проверяем, есть ли у пользователя роль admin
-    if (!session.user.roles?.includes('admin')) {
+    if (!session.user.roles?.includes('admin') && !session.user.roles?.includes('registrar')) {
       throw createError({
         statusCode: 403,
         message: 'Недостаточно прав для выполнения операции'
@@ -50,8 +50,9 @@ export default defineEventHandler(async (event) => {
     // Используем транзакцию для удаления пользователя и его детей
     await sequelize.transaction(async (t) => {
       // Если у пользователя есть дети, удаляем их сначала
-      if (user.children && user.children.length > 0) {
-        for (const child of user.children) {
+      const userWithChildren = user as User & { children?: User[] };
+      if (userWithChildren.children && userWithChildren.children.length > 0) {
+        for (const child of userWithChildren.children) {
           await User.destroy({
             where: { id: child.id },
             transaction: t

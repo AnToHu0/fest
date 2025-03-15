@@ -12,6 +12,7 @@ export interface User {
   childrenCount?: number;
   adminNotes?: string | null;
   isRegistered?: boolean;
+  personalDataSigned?: boolean;
   parent?: User;
   children?: User[];
 }

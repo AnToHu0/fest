@@ -16,6 +16,7 @@ interface CreateUserParams {
   password: string;
   adminNotes?: string | null;
   birthDate?: Date | null;
+  personalDataSigned?: boolean;
 }
 
 /**
@@ -57,7 +58,8 @@ export async function createUserWithActivation(userData: CreateUserParams) {
         isActive: false, // Пользователь неактивен до подтверждения email
         emailVerificationToken, // Добавляем токен верификации
         parentId: null, // Создаем основного пользователя, а не ребенка
-        password: userData.password
+        password: userData.password,
+        personalDataSigned: userData.personalDataSigned || false
       }, { transaction: t });
 
       // Назначаем роль user

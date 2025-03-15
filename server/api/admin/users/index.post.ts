@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Проверяем, есть ли у пользователя роль admin
-  if (!session.user.roles?.includes('admin')) {
+  if (!session.user.roles?.includes('admin') && !session.user.roles?.includes('registrar')) {
     throw createError({
       statusCode: 403,
       message: 'Недостаточно прав для выполнения операции'
@@ -44,7 +44,8 @@ export default defineEventHandler(async (event) => {
         phone: body.phone || null,
         city: body.city || null,
         adminNotes: body.adminNotes || null,
-        password: hashedPassword
+        password: hashedPassword,
+        personalDataSigned: body.personalDataSigned || false
       });
 
       // Возвращаем созданного пользователя без пароля
@@ -57,6 +58,7 @@ export default defineEventHandler(async (event) => {
         city: newUser.city,
         adminNotes: newUser.adminNotes,
         isActive: newUser.isActive,
+        personalDataSigned: newUser.personalDataSigned,
         createdAt: newUser.createdAt,
         updatedAt: newUser.updatedAt,
         message: 'Пользователь создан. На указанный email отправлено письмо для активации учетной записи.'

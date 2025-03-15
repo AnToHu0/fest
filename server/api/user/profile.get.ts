@@ -50,7 +50,8 @@ export default defineEventHandler(async (event) => {
       birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : null,
       email: user.email,
       phone: user.phone,
-      city: user.city
+      city: user.city,
+      personalDataSigned: user.personalDataSigned
     };
   } catch (error: any) {
     throw createError({

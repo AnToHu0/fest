@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Проверяем роль администратора
-  if (!session.user.roles?.includes('admin')) {
+  if (!session.user.roles?.includes('admin') && !session.user.roles?.includes('registrar')) {
     throw createError({
       statusCode: 403,
       message: 'Недостаточно прав'
@@ -46,7 +46,8 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    return user.children || [];
+    const userWithChildren = user as User & { children?: User[] };
+    return userWithChildren.children || [];
   } catch (error: any) {
     console.error('Ошибка при получении списка детей:', error);
     throw createError({

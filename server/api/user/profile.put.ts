@@ -9,6 +9,7 @@ interface ProfileUpdateBody {
   birthDate?: string;
   phone?: string;
   city?: string;
+  personalDataSigned?: boolean;
 }
 
 export default defineEventHandler(async (event) => {
@@ -55,6 +56,10 @@ export default defineEventHandler(async (event) => {
     user.birthDate = body.birthDate ? new Date(body.birthDate) : null;
     user.phone = body.phone || null;
     user.city = body.city || null;
+    // Обновляем поле personalDataSigned только если пользователь админ
+    if ((session.user.roles?.includes('admin') || session.user.roles?.includes('registrar')) && body.personalDataSigned !== undefined) {
+      user.personalDataSigned = body.personalDataSigned;
+    }
 
     // Сохраняем изменения
     await user.save();
@@ -76,7 +81,8 @@ export default defineEventHandler(async (event) => {
       birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : null,
       email: user.email,
       phone: user.phone,
-      city: user.city
+      city: user.city,
+      personalDataSigned: user.personalDataSigned
     };
   } catch (error: any) {
     throw createError({

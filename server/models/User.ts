@@ -19,6 +19,7 @@ export interface UserAttributes {
   emailVerificationToken: string | null;
   searchField: string;
   adminNotes: string | null;
+  personalDataSigned: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   parentId: number | null;
@@ -29,7 +30,7 @@ export interface UserAttributes {
 
 export interface UserCreationAttributes extends Optional<UserAttributes,
   'id' | 'isActive' | 'emailVerificationToken' | 'createdAt' | 'updatedAt' |
-  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles' | 'searchField' | 'adminNotes' | 'Departments'> { }
+  'spiritualName' | 'birthDate' | 'phone' | 'city' | 'parentId' | 'Roles' | 'searchField' | 'adminNotes' | 'Departments' | 'personalDataSigned'> { }
 
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -45,6 +46,7 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   declare emailVerificationToken: string | null;
   declare searchField: string;
   declare adminNotes: string | null;
+  declare personalDataSigned: boolean;
   declare createdAt?: Date;
   declare updatedAt?: Date;
   declare parentId: number | null;
@@ -189,6 +191,11 @@ User.init(
       type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: null
+    },
+    personalDataSigned: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     },
     createdAt: {
       type: DataTypes.DATE

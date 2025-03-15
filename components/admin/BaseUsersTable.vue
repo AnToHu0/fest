@@ -358,7 +358,15 @@ const isRecentlyDeregistered = (userId: number) => {
               'bg-white': isRecentlyDeregistered(user.id) || (!user.isRegistered && !isRecentlyRegistered(user.id))
             }">
               <td class="px-6 py-2.5 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">{{ user.fullName }}</div>
+                <div class="flex items-center">
+                  <div class="text-sm font-medium text-gray-900">{{ user.fullName }}</div>
+                  <div v-if="user.personalDataSigned === false" class="ml-1 relative group">
+                    <Icon name="mdi:alert-circle" class="w-4 h-4 text-red-500" />
+                    <div class="absolute left-0 top-full mt-1 w-56 bg-white shadow-lg rounded-md p-2 text-xs text-red-600 z-10 hidden group-hover:block border border-red-100 whitespace-normal">
+                      Нет подписи о персональных данных!
+                    </div>
+                  </div>
+                </div>
                 <div v-if="user.spiritualName" class="text-sm text-gray-500">{{ user.spiritualName }}</div>
               </td>
               <td class="px-6 py-2.5 whitespace-nowrap text-sm text-gray-500">
@@ -480,7 +488,7 @@ const isRecentlyDeregistered = (userId: number) => {
       <UserForm
         v-if="selectedUser"
         :userData="selectedUser"
-        :isAdmin="allowRoleManagement"
+        :isAdmin="true"
         :isCreatingNew="isCreatingNewUser"
         :allowRoleManagement="allowRoleManagement"
         @saved="handleSaved"

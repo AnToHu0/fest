@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Проверяем роль администратора
-  if (!session.user.roles?.includes('admin')) {
+  if (!session.user.roles?.includes('admin') && !session.user.roles?.includes('registrar')) {
     throw createError({
       statusCode: 403,
       message: 'Недостаточно прав'
@@ -124,6 +124,7 @@ export default defineEventHandler(async (event) => {
     city: user.city,
     isActive: user.isActive,
     adminNotes: user.adminNotes,
+    personalDataSigned: user.personalDataSigned,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     roles: user.Roles?.map(role => role.name) || [],
