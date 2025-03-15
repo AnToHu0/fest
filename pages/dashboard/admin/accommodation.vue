@@ -14,6 +14,8 @@
         @create-placement="handleCreatePlacement"
         @edit-placement="handleEditPlacement"
         @delete-placement="handleDeletePlacement"
+        @print-placement="handlePrintPlacement"
+        @print-room="handlePrintRoom"
       />
     </div>
 
@@ -34,6 +36,7 @@ import type { Room, Placement, PlacementFormData } from '~/types/accommodation';
 import { AccommodationFilter } from '~/components/accommodation';
 import AccommodationTimelineGridV2 from '~/components/accommodation/AccommodationTimelineGridV2.vue';
 import { PlacementFormModal } from '~/components/accommodation';
+import { openPrintPreview } from '~/utils/printService';
 
 definePageMeta({
   middleware: ['auth'],
@@ -425,6 +428,30 @@ const handleSubmitPlacement = async (formData: PlacementFormData) => {
   } catch (error) {
     console.error('Ошибка при сохранении размещения:', error);
   }
+};
+
+// Обработчик печати одного размещения
+const handlePrintPlacement = (placement: Placement) => {
+  // Находим комнату для размещения
+  const room = rooms.value.find(r => r.id === placement.roomId);
+  if (!room) {
+    console.error(`Не удалось найти комнату с ID ${placement.roomId} для печати`);
+    return;
+  }
+  
+  // Открываем окно предпросмотра печати
+  openPrintPreview(placement, room);
+};
+
+// Обработчик печати всей комнаты
+const handlePrintRoom = (room: Room) => {
+  if (!room.placements || room.placements.length === 0) {
+    console.error(`В комнате ${room.id} нет размещений для печати`);
+    return;
+  }
+  
+  // Открываем окно предпросмотра печати для всех размещений в комнате
+  openPrintPreview(room.placements, room);
 };
 
 // Загрузка данных при монтировании компонента

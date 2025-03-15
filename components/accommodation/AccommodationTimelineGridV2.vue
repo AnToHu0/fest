@@ -45,7 +45,23 @@
                 <td class="room-info-cell sticky left-0 z-20 bg-white">
                   <div class="room-info-container">
                     <template v-if="slot === 1">
-                      <div class="text-xs font-medium">Корпус {{ room.building }}, этаж {{ room.floor }}, комн. {{ room.number }}</div>
+                      <div class="text-xs font-medium">
+                        <span>Корпус {{ room.building }}, этаж {{ room.floor }}, комн. {{ room.number }}</span>
+                      </div>
+                      
+                      <!-- Кнопка печати для комнаты (только для первого слота) -->
+                      <div 
+                        v-if="hasRoomPlacements(room)"
+                        class="room-print-button-container"
+                      >
+                        <button 
+                          @click.stop="handleRoomPrintClick(room)"
+                          class="room-print-button"
+                          title="Печать инфо-листов для всей комнаты"
+                        >
+                          <Icon name="mdi:printer" class="w-4 h-4" />
+                        </button>
+                      </div>
                     </template>
                     <template v-else>
                       <div class="text-xs invisible">Корпус {{ room.building }}, этаж {{ room.floor }}, комн. {{ room.number }}</div>
@@ -79,6 +95,7 @@
                       :children="getChildrenForPlacement(placement)"
                       @edit="$emit('edit-placement', placement)"
                       @delete="$emit('delete-placement', placement.id)"
+                      @print="$emit('print-placement', placement)"
                     />
                     <div v-if="isPlacementVisible(placement, index)" style="display: none;">
                       {{ console.log('Placement data:', placement.id, placement) }}
@@ -182,6 +199,8 @@ const emit = defineEmits<{
   (e: 'create-placement', roomId: number, slot: number, date?: Date): void;
   (e: 'edit-placement', placement: Placement): void;
   (e: 'delete-placement', placementId: number): void;
+  (e: 'print-placement', placement: Placement): void;
+  (e: 'print-room', room: Room): void;
 }>();
 
 // Ссылка на контейнер таблицы
@@ -676,6 +695,16 @@ const getChildrenForPlacement = (placement: Placement) => {
   
   return [];
 };
+
+// Проверяет, есть ли размещения в комнате
+const hasRoomPlacements = (room: Room): boolean => {
+  return room.placements && room.placements.length > 0;
+};
+
+// Обработчик клика по иконке печати комнаты
+const handleRoomPrintClick = (room: Room) => {
+  emit('print-room', room);
+};
 </script>
 
 <style scoped>
@@ -897,5 +926,34 @@ select:hover {
     background: #a5b4fc;
     border-radius: 10px;
   }
+}
+
+/* Стили для кнопки печати комнаты */
+.room-print-button-container {
+  position: absolute;
+  left: 205px; /* Позиционируем справа от ячейки с информацией о комнате */
+  top: 8px;
+  z-index: 30;
+}
+
+.room-print-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background-color: #f0f9ff;
+  color: #0284c7;
+  transition: all 0.2s ease;
+  border: 1px solid #bae6fd;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.room-print-button:hover {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 </style> 

@@ -20,12 +20,22 @@
         </div>
         <div class="placement-dates">{{ startDate }} - {{ endDate }}</div>
       </div>
-      <button 
-        @click.stop="handleDeleteClick" 
-        class="delete-btn"
-      >
-        <Icon name="mdi:close" class="w-4 h-4" />
-      </button>
+      <div class="action-buttons">
+        <button 
+          @click.stop="handlePrintClick" 
+          class="action-btn print-btn"
+          title="Печать инфо-листа"
+        >
+          <Icon name="mdi:printer" class="w-4 h-4" />
+        </button>
+        <button 
+          @click.stop="handleDeleteClick" 
+          class="action-btn delete-btn"
+          title="Удалить размещение"
+        >
+          <Icon name="mdi:close" class="w-4 h-4" />
+        </button>
+      </div>
     </div>
     
     <!-- Используем компонент ConfirmDialog -->
@@ -105,6 +115,7 @@ const childrenTooltip = computed(() => {
 const emit = defineEmits<{
   (e: 'edit'): void;
   (e: 'delete'): void;
+  (e: 'print'): void;
 }>();
 
 const showDeleteConfirm = ref(false);
@@ -112,6 +123,11 @@ const showDeleteConfirm = ref(false);
 const handleDeleteClick = (event: Event) => {
   event.stopPropagation(); // Предотвращаем всплытие события
   showDeleteConfirm.value = true;
+};
+
+const handlePrintClick = (event: Event) => {
+  event.stopPropagation(); // Предотвращаем всплытие события
+  emit('print');
 };
 
 const confirmDelete = () => {
@@ -200,8 +216,14 @@ const confirmDelete = () => {
   opacity: 0.9;
 }
 
-/* Кнопка удаления */
-.delete-btn {
+/* Кнопки действий */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.action-btn {
   background: transparent;
   border: none;
   cursor: pointer;
@@ -209,19 +231,19 @@ const confirmDelete = () => {
   border-radius: 50%;
   transition: background-color 0.2s;
   opacity: 0;
-  margin-left: auto;
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: 2px;
 }
 
-.placement-card:hover .delete-btn {
+.placement-card:hover .action-btn {
   opacity: 1;
 }
 
-.delete-btn:hover {
+.action-btn:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
 
